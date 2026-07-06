@@ -2,6 +2,7 @@
 #define curvatureFunctions_H
 
 #include "volFields.H"
+#include "surfaceFields.H"
 #include "dimensionedScalar.H"
 
 namespace Foam
@@ -9,19 +10,29 @@ namespace Foam
 namespace curvatureCorrection
 {
 
-//- Return a bounded, dimensionless curvature/rotation production multiplier.
-//
-//  NOTE: This is a deliberately simple placeholder based on local invariants.
-//  It is isolated here so a validated Spalart-Shur, Smirnov-Menter, or other
-//  formulation can replace it without changing the turbulence model class.
-tmp<volScalarField> correctionFactor
+// Smirnov-Menter SST-RC correction (J. Turbomach. 131, 041010, 2009).
+tmp<volScalarField> sstCorrectionFactor
 (
     const volTensorField& gradU,
+    const volVectorField& U,
+    const surfaceScalarField& phi,
+    const volScalarField& omega,
     const dimensionedScalar& Cr1,
     const dimensionedScalar& Cr2,
     const dimensionedScalar& Cr3,
     const dimensionedScalar& frMin,
     const dimensionedScalar& frMax
+);
+
+// Spalart-Shur SA-RC correction (AIAA J. 38(5), 784-792, 2000).
+tmp<volScalarField> saCorrectionFactor
+(
+    const volTensorField& gradU,
+    const volVectorField& U,
+    const surfaceScalarField& phi,
+    const dimensionedScalar& Cr1,
+    const dimensionedScalar& Cr2,
+    const dimensionedScalar& Cr3
 );
 
 } // End namespace curvatureCorrection

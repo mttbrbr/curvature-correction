@@ -30,10 +30,12 @@ class kOmegaSSTCC
 
 protected:
 
-    //- Standard SST production limiter multiplied by bounded fr.
-    virtual tmp<volScalarField::Internal> Pk
+    //- Apply SST-RC to production used by both k and omega equations.
+    virtual tmp<volScalarField::Internal> GbyNu
     (
-        const volScalarField::Internal& G
+        const volScalarField::Internal& GbyNu0,
+        const volScalarField::Internal& F2,
+        const volScalarField::Internal& S2
     ) const override;
 
 public:

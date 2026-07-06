@@ -1,4 +1,5 @@
 common/curvatureFunctions.C
 kOmegaSSTCC/makekOmegaSSTCC.C
+SpalartAllmarasCC/makeSpalartAllmarasCC.C
 
 LIB = $(FOAM_USER_LIBBIN)/libcurvatureCorrectionModels

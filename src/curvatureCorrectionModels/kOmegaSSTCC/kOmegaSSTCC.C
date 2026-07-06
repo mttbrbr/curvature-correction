@@ -7,22 +7,29 @@ namespace RASModels
 {
 
 template<class BasicTurbulenceModel>
-tmp<volScalarField::Internal> kOmegaSSTCC<BasicTurbulenceModel>::Pk
+tmp<volScalarField::Internal> kOmegaSSTCC<BasicTurbulenceModel>::GbyNu
 (
-    const volScalarField::Internal& G
+    const volScalarField::Internal& GbyNu0,
+    const volScalarField::Internal& F2,
+    const volScalarField::Internal& S2
 ) const
 {
-    // Preserve the production limiter implemented by the standard SST model.
-    tmp<volScalarField::Internal> tProduction(Parent::Pk(G));
+    tmp<volScalarField::Internal> tProduction
+    (
+        Parent::GbyNu(GbyNu0, F2, S2)
+    );
 
     if (curvatureCorrection_)
     {
         const tmp<volTensorField> tgradU(fvc::grad(this->U_));
         const tmp<volScalarField> tfr
         (
-            curvatureCorrection::correctionFactor
+            curvatureCorrection::sstCorrectionFactor
             (
                 tgradU(),
+                this->U_,
+                this->phi_,
+                this->omega_,
                 Cr1_,
                 Cr2_,
                 Cr3_,
@@ -30,8 +37,7 @@ tmp<volScalarField::Internal> kOmegaSSTCC<BasicTurbulenceModel>::Pk
                 frMax_
             )
         );
-
-        tProduction.ref() *= tfr().primitiveField();
+        tProduction.ref() *= tfr().internalField();
     }
 
     return tProduction;
@@ -107,6 +113,12 @@ kOmegaSSTCC<BasicTurbulenceModel>::kOmegaSSTCC
         )
     )
 {
+    if (frMin_.value() < 0)
+    {
+        FatalIOErrorInFunction(this->coeffDict_)
+            << "frMin must be non-negative" << exit(FatalIOError);
+    }
+
     if (frMin_.value() > frMax_.value())
     {
         FatalIOErrorInFunction(this->coeffDict_)
@@ -138,6 +150,12 @@ bool kOmegaSSTCC<BasicTurbulenceModel>::read()
     Cr3_.readIfPresent(this->coeffDict());
     frMin_.readIfPresent(this->coeffDict());
     frMax_.readIfPresent(this->coeffDict());
+
+    if (frMin_.value() < 0)
+    {
+        FatalIOErrorInFunction(this->coeffDict())
+            << "frMin must be non-negative" << exit(FatalIOError);
+    }
 
     if (frMin_.value() > frMax_.value())
     {
