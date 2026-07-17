@@ -6,7 +6,7 @@ Generated from schema v1. Commit: `validation/curvature-correction based on 1961
 
 The implemented inertial-frame SA-RC and Smirnov-Menter correction algebra agrees with the published NASA TMR definitions, and deterministic tests plus native/correction-off CFD regression verify the implementation paths. On the converged three-grid Smits convex-curvature case both corrections produce the expected reduction in convex-wall Cf; profile differences contract with refinement. This is only one curvature family, however. No neutral benchmark, rotating-channel series, independent concave case, separated-flow benchmark, Reynolds/rotation-number sweep, or high-fidelity 3-D validation is available. The rotating-frame OmegaRot terms are not implemented. The correction is therefore not ready for an unrestricted model merge.
 
-**Final recommendation: richiede modifiche**
+**Final recommendation: richiede modifiche e validazione aggiuntiva prima del merge definitivo**
 
 ## Implementation audit
 
@@ -52,6 +52,25 @@ Common: S=sqrt(2 Sij Sij), W=sqrt(2 Wij Wij), r*=S/max(W,SMALL). SST: D2=max(S2,
 
 The SA function, D4 denominator, constants, unbounded factor, and placement on Cb1 production match NASA TMR SA-RC/Shur et al. The SST W D3 denominator, D2=max(S2,0.09 omega2), constants, [0,1.25] clipping and multiplication of both productions match NASA TMR SST-RC/Smirnov-Menter. Both published definitions include extra rotating-frame terms that are absent here. NASA TMR also recommends variant-specific naming when RC is added to SST-2003.
 
+## Merge blockers
+
+- The formulation is incomplete and unverified in rotating reference frames because the published OmegaRot terms are absent.
+- No neutral CFD benchmark demonstrates that enabling the correction remains neutral when curvature and rotation effects are absent; correction-off recovery is exact but answers a different question.
+- No independent validation benchmark outside the available Smits convex-curvature family has converged reference evidence.
+- Production C++ lacks fail-fast checks for NaN, Inf and non-finite coefficients/intermediate fields.
+- SST clipping has not been quantified by clipped volume, frequency, production weighting or spatial location.
+- SA fr1 is unbounded, reached approximately 9.17 on the fine Smits grid, and has no application-specific upper-limit justification.
+- Curvature/rotation indicator, base production, corrected production, production ratio and clipping-mask fields are not exported.
+- The CI pipeline is prepared locally but has not been published or executed in GitHub because the PAT lacks workflow scope.
+
+## Current validation status
+
+- Verified for the principal algebraic and source-integration aspects in an inertial reference frame.
+- Smits convex-wall results are promising and consistent with the expected stabilizing effect of convex curvature.
+- Neutral behavior with the correction enabled is not demonstrated by a neutral CFD benchmark.
+- Concave curvature, stabilizing/destabilizing rotation, rotating frames and separated curved flows remain unverified.
+- Robustness across grids is demonstrated only for Smits Cf; scheme, y+, clipping and broader benchmark robustness remain unverified.
+- No regression is observed when the correction is disabled, but regression with the correction enabled on neutral flows remains unverified.
 ## Verification
 
 Twenty-five deterministic Python tests cover tensor invariants, material-derivative source contract, asymptotes, clipping, opposite curvature senses, coefficient/data validation, report metrics and report failure modes. The OpenFOAM library builds under v2412. Native and correction-off Cf agree exactly in the quick regression; full-field comparisons use relative L-infinity <= 1e-12. Serial restart and four-rank MPI restart are checked independently at 5e-4.
@@ -223,7 +242,18 @@ Only an algebraic +/-10% Cr2 sweep is included; it demonstrates smooth indicator
 - Formal uncertainty on sparse experimental Cf points is unavailable, so metric classification does not include experimental error bars.
 - The approximate GCI uses norms of successive profile differences; it is not a pointwise Richardson extrapolation and the observed orders are below the nominal scheme order.
 - Tip-vortex results are stopped at 100 iterations and must not be used quantitatively.
-- Memory was not instrumented; wall/CPU execution time and iteration count are available.
+- Memory was not instrumented. Fine-grid execution-time ratios are available, but isolated per-iteration correction overhead is not quantified.
+- Systematic grid independence exists only for Smits Cf; numerical-scheme independence and grid studies across the remaining validation matrix are absent.
+- A local improvement may partly compensate numerical or model-form error; no independent dataset currently separates that possibility.
+
+## Conditions before definitive merge
+
+1. Do not modify native SA or SST behavior; if integrated experimentally, make the correction explicitly disabled by default.
+2. Add fail-fast production checks for NaN, Inf and non-finite correction inputs/intermediates.
+3. Export the curvature/rotation indicator, base and corrected production, production ratio and clipping mask.
+4. Complete at least one neutral benchmark, one physically appropriate concave benchmark and one rotating benchmark.
+5. Quantify clipping extent, frequency, location and production weighting, and justify the unbounded SA response.
+6. Publish and successfully execute the prepared CI pipeline.
 
 ## Reproduction
 
@@ -256,5 +286,5 @@ cd tutorials/incompressible/simpleFoam/flapTipVortex
 
 ## Conclusion
 
-SA-RC and SST correction formulas are verified for inertial-frame use and show the expected trend on a grid-refined convex-curvature benchmark. The evidence does not satisfy the requested acceptance matrix or establish general predictive improvement. Add rotating-frame terms or explicitly constrain scope, correct the SST variant naming, expose indicator/production/clipping diagnostics, and complete neutral, rotation, concave, separated-flow, Reynolds-number and cost studies before reconsidering merge readiness. Final recommendation: richiede modifiche.
+SA-RC and SST correction formulas are verified for the principal implementation aspects in an inertial frame and show the expected stabilizing trend on a grid-refined convex-curvature benchmark. The evidence does not establish neutral CFD behavior, concave/rotating-frame response, or general predictive improvement. The change may remain experimental, or be integrated only behind an option explicitly disabled by default, while the listed conditions are completed. Final recommendation: richiede modifiche e validazione aggiuntiva prima del merge definitivo.
 

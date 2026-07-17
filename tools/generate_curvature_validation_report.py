@@ -276,6 +276,9 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
         "benchmarks": analysed_benchmarks,
         "acceptance_criteria": criteria,
         "missing_benchmarks": data.get("missing_benchmarks", []),
+        "merge_blockers": data.get("merge_blockers", []),
+        "validation_status": data.get("validation_status", []),
+        "merge_conditions": data.get("merge_conditions", []),
         "known_issues": data.get("known_issues", []),
         "commands": data.get("commands", []),
         "non_converged": non_converged,
@@ -327,6 +330,12 @@ def markdown_report(result: dict[str, Any]) -> str:
         recommendation = str(item.get("recommendation", "not provided")).rstrip(".")
         lines.append(f"- **{item.get('severity', 'unspecified')}** — {item['description']} Recommendation: {recommendation}.")
     lines.extend(["", "### Literature comparison", "", str(impl.get("literature_comparison", "Not provided.")), ""])
+    lines.extend(["## Merge blockers", ""])
+    for item in result["merge_blockers"]:
+        lines.append(f"- {item}")
+    lines.extend(["", "## Current validation status", ""])
+    for item in result["validation_status"]:
+        lines.append(f"- {item}")
 
     lines.extend([
         "## Verification",
@@ -379,6 +388,9 @@ def markdown_report(result: dict[str, Any]) -> str:
     lines.extend(["", "## Known issues and limitations", ""])
     for item in result["known_issues"]:
         lines.append(f"- {item}")
+    lines.extend(["", "## Conditions before definitive merge", ""])
+    for index, item in enumerate(result["merge_conditions"], start=1):
+        lines.append(f"{index}. {item}")
     lines.extend(["", "## Reproduction", ""])
     for command in result["commands"]:
         lines.extend(["```bash", command, "```", ""])
