@@ -43,7 +43,8 @@ tmp<volScalarField> sstCorrectionFactor
 )
 {
     const volSymmTensorField strain(symm(gradU));
-    const volTensorField rotation(skew(gradU));
+    // OpenFOAM stores grad(U)_ij = dU_j/dx_i; the published W_ij uses dU_i/dx_j.
+    const volTensorField rotation(-skew(gradU));
     const volScalarField strainRate(sqrt(2.0*magSqr(strain)));
     const volScalarField rotationRate(sqrt(2.0*magSqr(rotation)));
     const dimensionedScalar smallRate("smallRate", dimless/dimTime, SMALL);
@@ -90,7 +91,8 @@ tmp<volScalarField> saCorrectionFactor
 )
 {
     const volSymmTensorField strain(symm(gradU));
-    const volTensorField rotation(skew(gradU));
+    // OpenFOAM stores grad(U)_ij = dU_j/dx_i; the published W_ij uses dU_i/dx_j.
+    const volTensorField rotation(-skew(gradU));
     const volScalarField strainRate(sqrt(2.0*magSqr(strain)));
     const volScalarField rotationRate(sqrt(2.0*magSqr(rotation)));
     const dimensionedScalar smallRate("smallRate", dimless/dimTime, SMALL);

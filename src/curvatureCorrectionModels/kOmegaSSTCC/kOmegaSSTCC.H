@@ -25,17 +25,20 @@ class kOmegaSSTCC
     dimensionedScalar frMin_;
     dimensionedScalar frMax_;
 
+    //- Runtime diagnostic written for post-processing.  GbyNu0() is const,
+    //  therefore the cached field must be mutable.
+    mutable volScalarField fr1_;
+
     kOmegaSSTCC(const kOmegaSSTCC&) = delete;
     void operator=(const kOmegaSSTCC&) = delete;
 
 protected:
 
-    //- Apply SST-RC to production used by both k and omega equations.
-    virtual tmp<volScalarField::Internal> GbyNu
+    //- Apply SST-RC to the raw production before either SST limiter is used.
+    virtual tmp<volScalarField::Internal> GbyNu0
     (
-        const volScalarField::Internal& GbyNu0,
-        const volScalarField::Internal& F2,
-        const volScalarField::Internal& S2
+        const volTensorField& gradU,
+        const volScalarField& S2
     ) const override;
 
 public:

@@ -20,6 +20,7 @@ class SpalartAllmarasCC
     dimensionedScalar Cr1_;
     dimensionedScalar Cr2_;
     dimensionedScalar Cr3_;
+    volScalarField fr1_;
 
     SpalartAllmarasCC(const SpalartAllmarasCC&) = delete;
     void operator=(const SpalartAllmarasCC&) = delete;

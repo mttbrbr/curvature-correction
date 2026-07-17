@@ -7,37 +7,37 @@ namespace RASModels
 {
 
 template<class BasicTurbulenceModel>
-tmp<volScalarField::Internal> kOmegaSSTCC<BasicTurbulenceModel>::GbyNu
+tmp<volScalarField::Internal> kOmegaSSTCC<BasicTurbulenceModel>::GbyNu0
 (
-    const volScalarField::Internal& GbyNu0,
-    const volScalarField::Internal& F2,
-    const volScalarField::Internal& S2
+    const volTensorField& gradU,
+    const volScalarField& S2
 ) const
 {
     tmp<volScalarField::Internal> tProduction
     (
-        Parent::GbyNu(GbyNu0, F2, S2)
+        Parent::GbyNu0(gradU, S2)
     );
 
     if (curvatureCorrection_)
     {
-        const tmp<volTensorField> tgradU(fvc::grad(this->U_));
-        const tmp<volScalarField> tfr
+        fr1_ = curvatureCorrection::sstCorrectionFactor
         (
-            curvatureCorrection::sstCorrectionFactor
-            (
-                tgradU(),
-                this->U_,
-                this->phi_,
-                this->omega_,
-                Cr1_,
-                Cr2_,
-                Cr3_,
-                frMin_,
-                frMax_
-            )
+            gradU,
+            this->U_,
+            this->phi_,
+            this->omega_,
+            Cr1_,
+            Cr2_,
+            Cr3_,
+            frMin_,
+            frMax_
         );
-        tProduction.ref() *= tfr().internalField();
+        fr1_.correctBoundaryConditions();
+        tProduction.ref() *= fr1_.internalField();
+    }
+    else
+    {
+        fr1_ = scalar(1);
     }
 
     return tProduction;
@@ -111,6 +111,19 @@ kOmegaSSTCC<BasicTurbulenceModel>::kOmegaSSTCC
         (
             "frMax", this->coeffDict_, dimless, 1.25
         )
+    ),
+    fr1_
+    (
+        IOobject
+        (
+            "fr1",
+            this->runTime_.timeName(),
+            this->mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        this->mesh_,
+        dimensionedScalar(dimless, scalar(1))
     )
 {
     if (frMin_.value() < 0)

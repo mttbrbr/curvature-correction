@@ -1,0 +1,154 @@
+#!/bin/sh
+set -eu
+
+cd "${0%/*}" || exit 1
+: "${WM_PROJECT_DIR:?OpenFOAM environment is not loaded}"
+
+tutorialDir=$(pwd)
+repoDir=$(cd "$tutorialDir/../../../.." && pwd)
+resultsDir="$tutorialDir/runs/grid-study"
+nProcs=${CURVATURE_MPI_PROCS:-4}
+resume=${CURVATURE_GRID_RESUME:-0}
+startSeconds=$(date +%s)
+
+if [ "$nProcs" -lt 2 ]; then
+    echo "ERROR: CURVATURE_MPI_PROCS must be at least 2" >&2
+    exit 1
+fi
+
+if [ "$resume" != 1 ]; then
+    rm -rf "$resultsDir"
+fi
+mkdir -p "$resultsDir"
+
+if [ "${CURVATURE_SKIP_BUILD:-0}" != 1 ]; then
+    echo "Building libcurvatureCorrectionModels.so"
+    (cd "$repoDir/src/curvatureCorrectionModels" && wmake libso)
+fi
+
+prepareMesh()
+{
+    level=$1
+    grid=$2
+    compressed=$3
+    expectedCells=$4
+    meshCase="$resultsDir/$level/_mesh"
+
+    if [ "$resume" = 1 ] && [ -d "$meshCase/constant/polyMesh" ]; then
+        echo "Reusing $level mesh"
+        return
+    fi
+
+    echo "Preparing $level mesh"
+    mkdir -p "$resultsDir/$level"
+    cp -a "$tutorialDir/baseCase" "$meshCase"
+    if [ "$compressed" = yes ]; then
+        gzip -cd "$grid" > "$meshCase/grid.p2dfmt"
+        inputGrid="$meshCase/grid.p2dfmt"
+    else
+        inputGrid="$grid"
+    fi
+
+    plot3dToFoam -case "$meshCase" -2D 0.01 -noBlank "$inputGrid" > "$meshCase/log.plot3dToFoam" 2>&1
+    autoPatch -case "$meshCase" -overwrite 20 > "$meshCase/log.autoPatch" 2>&1
+    createPatch -case "$meshCase" -overwrite > "$meshCase/log.createPatch" 2>&1
+    checkMesh -case "$meshCase" > "$meshCase/log.checkMesh" 2>&1
+    grep -q "cells: *$expectedCells" "$meshCase/log.checkMesh"
+    grep -q "Number of regions: 1 (OK)" "$meshCase/log.checkMesh"
+    grep -q "Max skewness = .* OK" "$meshCase/log.checkMesh"
+    grep -q "High aspect ratio cells found" "$meshCase/log.checkMesh"
+    grep -q "Failed 1 mesh checks" "$meshCase/log.checkMesh"
+}
+
+runCase()
+{
+    level=$1
+    name=$2
+    model=$3
+    correction=$4
+    sourceLevel=${5:-}
+    sourceCase=""
+    caseDir="$resultsDir/$level/$name"
+    meshCase="$resultsDir/$level/_mesh"
+
+    if [ -n "$sourceLevel" ]; then
+        sourceCase="$resultsDir/$sourceLevel/$name"
+    fi
+    if [ "$resume" = 1 ] && [ -f "$caseDir/$name.foam" ] && grep -q "SIMPLE solution converged" "$caseDir/log.simpleFoam"; then
+        echo "Reusing converged $level/$name"
+        return
+    fi
+    if [ -d "$caseDir" ]; then
+        rm -rf "$caseDir"
+    fi
+
+    echo "Running $level/$name with $nProcs MPI ranks"
+    cp -a "$tutorialDir/baseCase" "$caseDir"
+    cp -a "$meshCase/constant/polyMesh" "$caseDir/constant/"
+    cp -a "$caseDir/0.orig" "$caseDir/0"
+    foamDictionary "$caseDir/constant/turbulenceProperties" -entry RAS/RASModel -set "$model"
+
+    case "$model" in
+        kOmegaSSTCC)
+            foamDictionary "$caseDir/constant/turbulenceProperties" -entry RAS/kOmegaSSTCCCoeffs/curvatureCorrection -set "$correction"
+            ;;
+        SpalartAllmarasCC)
+            foamDictionary "$caseDir/constant/turbulenceProperties" -entry RAS/SpalartAllmarasCCCoeffs/curvatureCorrection -set "$correction"
+            ;;
+    esac
+
+    if [ -n "$sourceCase" ]; then
+        mapFields -case "$caseDir" -sourceTime latestTime -consistent "$sourceCase" > "$caseDir/log.mapFields" 2>&1
+        rm -f "$caseDir/0/fr1" "$caseDir/0/wallShearStress"
+    else
+        potentialFoam -case "$caseDir" -writep > "$caseDir/log.potentialFoam" 2>&1
+    fi
+
+    foamDictionary "$caseDir/system/controlDict" -entry endTime -set 3000
+    foamDictionary "$caseDir/system/controlDict" -entry writeInterval -set 200
+    foamDictionary "$caseDir/system/fvSolution" -entry SIMPLE/residualControl/p -set 1e-5
+    foamDictionary "$caseDir/system/decomposeParDict" -entry numberOfSubdomains -set "$nProcs"
+    decomposePar -case "$caseDir" -force > "$caseDir/log.decomposePar" 2>&1
+    mpirun -np "$nProcs" simpleFoam -case "$caseDir" -parallel > "$caseDir/log.simpleFoam" 2>&1
+    grep -q '^End$' "$caseDir/log.simpleFoam"
+    grep -q "SIMPLE solution converged" "$caseDir/log.simpleFoam"
+    reconstructPar -case "$caseDir" -latestTime > "$caseDir/log.reconstructPar" 2>&1
+    simpleFoam -case "$caseDir" -postProcess -latestTime -func wallShearStress > "$caseDir/log.wallShearStress" 2>&1
+    : > "$caseDir/$name.foam"
+
+    rank=0
+    while [ "$rank" -lt "$nProcs" ]; do
+        rm -rf "$caseDir/processor$rank"
+        rank=$((rank + 1))
+    done
+}
+
+runLevel()
+{
+    level=$1
+    sourceLevel=${2:-}
+    runCase "$level" sst kOmegaSST native "$sourceLevel"
+    runCase "$level" sstcc-on kOmegaSSTCC on "$sourceLevel"
+    runCase "$level" sa SpalartAllmaras native "$sourceLevel"
+    runCase "$level" sacc-on SpalartAllmarasCC on "$sourceLevel"
+}
+
+prepareMesh level3-129x49 "$tutorialDir/resources/smits_3levdn_129x49.p2dfmt" no 6144
+prepareMesh level2-257x97 "$tutorialDir/resources/smits_2levdn_257x97.p2dfmt.gz" yes 24576
+prepareMesh level1-513x193 "$tutorialDir/resources/smits_1levdn_513x193.p2dfmt.gz" yes 98304
+
+runLevel level3-129x49
+runLevel level2-257x97 level3-129x49
+runLevel level1-513x193 level2-257x97
+
+python3 "$tutorialDir/tools/analyse_grid_study.py" "$tutorialDir"
+
+elapsed=$(( $(date +%s) - startSeconds ))
+printf 'Multi-grid study time: %d min %d s\n' $((elapsed / 60)) $((elapsed % 60))
+if [ "$elapsed" -gt 1500 ]; then
+    echo "ERROR: multi-grid study exceeded 25 minutes" >&2
+    exit 1
+fi
+
+echo "All multi-grid runs and checks passed"
+echo "Results: $resultsDir/summary.csv"

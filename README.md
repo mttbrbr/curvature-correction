@@ -87,7 +87,36 @@ SpalartAllmarasCCCoeffs
 SA-RC deliberately does not bound `fr1`: negative production in strongly
 stabilising rotation/curvature is part of the published model. The SA case must
 provide the standard `nuTilda` field instead of `k` and `omega`. All parent-model
-coefficients remain available in the corresponding coefficient dictionary.
+coefficients remain available in the corresponding coefficient dictionary. The
+custom models write the current correction factor as the `fr1` volume field at
+every normal OpenFOAM write time; this diagnostic is especially useful in
+ParaView.
+
+## Validation tutorial
+
+`tutorials/incompressible/simpleFoam/smitsCurve` is a self-contained version of
+the TMBWG 2DCC Smits convex-curvature case. Its `Allrun` script builds the
+library, imports a 6,144-cell PLOT3D mesh, runs native/on/off variants of SST and
+SA, checks `Cf` and `fr1`, exports VTK, and creates an SVG comparison against
+TMBWG CFL3D and experimental data:
+
+```bash
+cd tutorials/incompressible/simpleFoam/smitsCurve
+./Allrun
+```
+
+On the development machine the full six-case workflow completes in about 80
+seconds. The baseline run gave exact agreement between each native model and
+its custom counterpart with the correction off. With the correction on,
+convex-wall `Cf` near the bend decreased by 18.5% for SST-RC and 18.8% for
+SA-RC. See the [tutorial documentation](tutorials/incompressible/simpleFoam/smitsCurve/README.md)
+for acceptance criteria, limitations, and ParaView instructions.
+
+For stronger coverage, `Allrun-restartMPI` validates serial restart and a
+four-rank MPI restart, while `Allrun-gridStudy` runs native and corrected SST/SA
+on the nested 129x49, 257x97, and 513x193 TMBWG grids. The latter requires
+converged solutions and contracting `Cf` differences between successive levels.
+`Allrun-extended` executes the complete suite with a 30-minute total budget.
 
 ## Smoke-test tutorial
 
@@ -100,3 +129,19 @@ cd tutorials/incompressible/simpleFoam/curvedChannel
 
 The case verifies meshing, runtime selection and numerical execution. It is not
 a physical validation case.
+
+## Visible tip-vortex demonstration
+
+`tutorials/incompressible/simpleFoam/flapTipVortex` is a finite-span 3-D flap
+case designed to make the rolled-up tip vortices easy to inspect. It runs
+native SST and SST-RC on the same locally refined mesh and writes `Q`,
+`vorticity`, forces, and VTK output for direct ParaView comparison:
+
+```bash
+cd tutorials/incompressible/simpleFoam/flapTipVortex
+./Allrun
+```
+
+This is a qualitative demonstration, not a validation case. See the
+[case documentation](tutorials/incompressible/simpleFoam/flapTipVortex/README.md)
+for visualization settings and limitations.

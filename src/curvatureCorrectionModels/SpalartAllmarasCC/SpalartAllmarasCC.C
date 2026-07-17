@@ -56,6 +56,19 @@ SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
         (
             "Cr3", this->coeffDict_, dimless, 1.0
         )
+    ),
+    fr1_
+    (
+        IOobject
+        (
+            "fr1",
+            this->runTime_.timeName(),
+            this->mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        this->mesh_,
+        dimensionedScalar(dimless, scalar(1))
     )
 {
     if (type == typeName)
@@ -110,21 +123,17 @@ void SpalartAllmarasCC<BasicTurbulenceModel>::correct()
         this->Stilda(chi, fv1, tgradU(), dTilda)
     );
 
-    tmp<volScalarField> tfr
-    (
-        volScalarField::New
-        (
-            "fr1",
-            this->mesh_,
-            dimensionedScalar(dimless, scalar(1))
-        )
-    );
     if (curvatureCorrection_)
     {
-        tfr = curvatureCorrection::saCorrectionFactor
+        fr1_ = curvatureCorrection::saCorrectionFactor
         (
             tgradU(), U, this->phi_, Cr1_, Cr2_, Cr3_
         );
+        fr1_.correctBoundaryConditions();
+    }
+    else
+    {
+        fr1_ = scalar(1);
     }
 
     tmp<fvScalarMatrix> nuTildaEqn
@@ -139,7 +148,7 @@ void SpalartAllmarasCC<BasicTurbulenceModel>::correct()
        *magSqr(fvc::grad(this->nuTilda_)()())
      ==
         this->Cb1_*alpha()*rho()*Stilda()*this->nuTilda_()
-       *(tfr() - ft2())
+       *(fr1_() - ft2())
       - fvm::Sp
         (
             (

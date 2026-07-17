@@ -71,9 +71,16 @@ Testing/
 # OpenFOAM wmake generated files
 lnInclude/
 Make/linux*
+**/Make/linux*/
 lib/
 
 # Tutorial runtime output
 [1-9]*/
 processor*/
 postProcessing/
+log.*
+tutorials/**/runs/
+
+# Python analysis cache
+__pycache__/
+*.pyc
