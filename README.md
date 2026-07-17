@@ -92,6 +92,51 @@ custom models write the current correction factor as the `fr1` volume field at
 every normal OpenFOAM write time; this diagnostic is especially useful in
 ParaView.
 
+## Deterministic verification and validation report
+
+The mesh-independent kinematic oracle reproduces the implemented tensor
+algebra and checks uniform flow, shear, pure strain, rigid rotation, opposite
+curvature senses, small/large rates, near-zero denominators, clipping,
+NaN/Inf rejection, disabled-correction equivalence, and orthogonal-basis
+invariance:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The detailed [implementation audit](docs/implementation-audit.md) maps the
+equations to source lines, compares them with NASA TMR, records dimensional and
+asymptotic checks, and identifies numerical/model-scope risks. In particular,
+the correction currently supports inertial frames only and the OpenFOAM v2412
+SST parent has SST-2003 characteristics.
+
+After completing the three-grid tutorial, refresh the lightweight committed
+evidence and generate Markdown, HTML, JSON metrics, and SVG plots with:
+
+```bash
+python3 tools/collect_curvature_validation_data.py
+python3 tools/generate_curvature_validation_report.py \
+    data/curvature-validation/validation-input.json \
+    --output-dir reports/curvature-validation
+```
+
+The collector limits profile comparison to the experimental overlap and uses
+trapezoidal spatial weights. The report generator validates schema and finite
+values, calculates RMSE, normalized RMSE, MAE, bias, maximum and relative
+errors, classifies each dataset, lists non-converged/missing-reference cases,
+and exits non-zero for invalid data or a declared critical failure.
+
+Generated deliverables are:
+
+- `reports/curvature-validation/curvature-validation-report.md`;
+- `reports/curvature-validation/curvature-validation-report.html`;
+- `reports/curvature-validation/aggregated-metrics.json`.
+
+The report is deliberately explicit about missing neutral, concave, rotating,
+separated-flow, Reynolds-number, and industrial validation. A successful
+regression or one convex-curvature benchmark is not treated as general model
+validation.
+
 ## Validation tutorial
 
 `tutorials/incompressible/simpleFoam/smitsCurve` is a self-contained version of
