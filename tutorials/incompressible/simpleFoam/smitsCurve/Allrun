@@ -88,6 +88,16 @@ runCase sacc-off SpalartAllmarasCC off
 runCase sacc-on SpalartAllmarasCC on
 
 python3 "$tutorialDir/tools/analyse.py" "$tutorialDir"
+python3 "$tutorialDir/tools/compare_fields.py" \
+    --reference "$resultsDir/sst" \
+    --candidate "$resultsDir/sstcc-off" \
+    --output "$resultsDir/sst-off-fields.csv" \
+    --tolerance 1e-12 U p k omega nut
+python3 "$tutorialDir/tools/compare_fields.py" \
+    --reference "$resultsDir/sa" \
+    --candidate "$resultsDir/sacc-off" \
+    --output "$resultsDir/sa-off-fields.csv" \
+    --tolerance 1e-12 U p nuTilda nut
 
 elapsed=$(( $(date +%s) - startSeconds ))
 printf 'Total tutorial time: %d min %d s\n' $((elapsed / 60)) $((elapsed % 60))

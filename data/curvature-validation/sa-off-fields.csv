@@ -1,0 +1,5 @@
+candidate,field,max_abs,relative_linf,pass
+sacc-off,U,0,0,true
+sacc-off,p,0,0,true
+sacc-off,nuTilda,0,0,true
+sacc-off,nut,0,0,true
