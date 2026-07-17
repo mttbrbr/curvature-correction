@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="520">
+<rect width="100%" height="100%" fill="white"/>
+<text x="460.0" y="28" text-anchor="middle" font-family="sans-serif" font-size="17">Mean tip-core peak Q [1/s2]</text>
+<line x1="78" y1="458.00" x2="896" y2="458.00" stroke="#e5e5e5"/>
+<text x="70" y="462.00" text-anchor="end" font-family="sans-serif" font-size="10">724.6</text>
+<line x1="78" y1="376.00" x2="896" y2="376.00" stroke="#e5e5e5"/>
+<text x="70" y="380.00" text-anchor="end" font-family="sans-serif" font-size="10">2142</text>
+<line x1="78" y1="294.00" x2="896" y2="294.00" stroke="#e5e5e5"/>
+<text x="70" y="298.00" text-anchor="end" font-family="sans-serif" font-size="10">3559</text>
+<line x1="78" y1="212.00" x2="896" y2="212.00" stroke="#e5e5e5"/>
+<text x="70" y="216.00" text-anchor="end" font-family="sans-serif" font-size="10">4976</text>
+<line x1="78" y1="130.00" x2="896" y2="130.00" stroke="#e5e5e5"/>
+<text x="70" y="134.00" text-anchor="end" font-family="sans-serif" font-size="10">6393</text>
+<line x1="78" y1="48.00" x2="896" y2="48.00" stroke="#e5e5e5"/>
+<text x="70" y="52.00" text-anchor="end" font-family="sans-serif" font-size="10">7810</text>
+<line x1="78" y1="458" x2="896" y2="458" stroke="#222"/>
+<line x1="78" y1="48" x2="78" y2="458" stroke="#222"/>
+<polyline points="78.00,76.62 487.00,370.75 896.00,439.36" fill="none" stroke="#2864b7" stroke-width="2"/>
+<line x1="100" y1="498" x2="124" y2="498" stroke="#2864b7" stroke-width="3"/>
+<text x="131" y="502" font-family="sans-serif" font-size="11">SST</text>
+<polyline points="78.00,66.64 487.00,354.53 896.00,426.84" fill="none" stroke="#c53d36" stroke-width="2"/>
+<line x1="330" y1="498" x2="354" y2="498" stroke="#c53d36" stroke-width="3"/>
+<text x="361" y="502" font-family="sans-serif" font-size="11">SST-RC</text>
+</svg>

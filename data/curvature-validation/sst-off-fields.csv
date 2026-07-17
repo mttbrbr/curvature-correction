@@ -1,0 +1,6 @@
+candidate,field,max_abs,relative_linf,pass
+sstcc-off,U,0,0,true
+sstcc-off,p,0,0,true
+sstcc-off,k,0,0,true
+sstcc-off,omega,0,0,true
+sstcc-off,nut,0,0,true
