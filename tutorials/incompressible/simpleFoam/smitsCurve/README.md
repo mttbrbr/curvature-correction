@@ -38,9 +38,13 @@ checks the results, exports VTK, and generates a comparison plot. It takes about
 Acceptance requires the custom models with the correction off to match their
 native parents, corrected SST and SA to reduce convex-wall `Cf` near the bend,
 and `fr1` to be valid. SST `fr1` must remain inside [0, 1.25]; the published SA
-correction is deliberately unbounded.
+correction is deliberately unbounded. In addition to `Cf`, the runner compares
+native and correction-off internal fields at a relative L-infinity tolerance of
+1e-12: `U`, `p`, `k`, `omega`, and `nut` for SST; `U`, `p`, `nuTilda`, and
+`nut` for SA.
 
-Results are `runs/summary.csv` and `runs/cf-comparison.svg`.
+Results are `runs/summary.csv`, `runs/sst-off-fields.csv`,
+`runs/sa-off-fields.csv`, and `runs/cf-comparison.svg`.
 
 ## Restart and MPI consistency
 
@@ -89,7 +93,11 @@ turbulence fields remain at 1e-6.
 The script requires every solver to print `SIMPLE solution converged`. It then
 checks that the curvature response remains physical, that the 257-to-513 `Cf`
 relative RMS difference is below 5%, and that successive grid differences
-contract. A clean run takes about 18 minutes and has a 25-minute limit.
+contract. The summary also records an observed order and approximate fine-grid
+GCI based on those profile norms, solver iterations, execution time,
+corrected/base cost ratios, and `fr1` extrema. Solver logs are rejected if they
+contain NaN or Inf. A clean run takes about 18 minutes and has a 25-minute
+limit.
 
 Outputs include:
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 import bisect
 import csv
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -19,6 +20,18 @@ from analyse import (
 
 LEVELS = ("level3-129x49", "level2-257x97", "level1-513x193")
 MODELS = ("sst", "sstcc-on", "sa", "sacc-on")
+GRID_RATIO = 2.0
+
+
+def log_statistics(case: Path) -> tuple[float, int]:
+    text = (case / "log.simpleFoam").read_text()
+    if re.search(r"(^|[^A-Za-z])(nan|inf)([^A-Za-z]|$)", text, re.I | re.M):
+        raise RuntimeError(f"NaN or Inf found in {case}/log.simpleFoam")
+    times = [int(value) for value in re.findall(r"^Time = (\d+)\s*$", text, re.M)]
+    execution = [float(value) for value in re.findall(r"ExecutionTime = ([0-9.Ee+-]+) s", text)]
+    if not times or not execution:
+        raise RuntimeError(f"cannot extract iteration/cost from {case}/log.simpleFoam")
+    return execution[-1], times[-1]
 
 
 def interpolated_value(curve: list[tuple[float, float]], x_value: float) -> float:
@@ -51,12 +64,21 @@ def main() -> int:
     tutorial = Path(sys.argv[1]).resolve()
     results = tutorial / "runs" / "grid-study"
     curves: dict[str, dict[str, list[tuple[float, float]]]] = {}
+    costs: dict[str, dict[str, float]] = {}
+    iterations: dict[str, dict[str, int]] = {}
+    fr_ranges: dict[str, dict[str, tuple[float, float] | None]] = {}
 
     for level in LEVELS:
         curves[level] = {}
+        costs[level] = {}
+        iterations[level] = {}
+        fr_ranges[level] = {}
         for model in MODELS:
-            curve, _ = extract_cf(results / level / model)
+            case = results / level / model
+            curve, fr_range = extract_cf(case)
             curves[level][model] = curve
+            fr_ranges[level][model] = fr_range
+            costs[level][model], iterations[level][model] = log_statistics(case)
             with (results / level / model / "cf.csv").open("w", newline="") as stream:
                 writer = csv.writer(stream)
                 writer.writerow(("x_m", "Cf_Uref"))
@@ -81,6 +103,25 @@ def main() -> int:
         metrics[f"{model}_129_to_257_relative_rms"] = coarse_medium
         metrics[f"{model}_257_to_513_relative_rms"] = medium_fine
         metrics[f"{model}_convergence_ratio"] = medium_fine/max(coarse_medium, 1e-30)
+        if medium_fine > 0 and coarse_medium > medium_fine:
+            observed_order = math.log(coarse_medium/medium_fine)/math.log(GRID_RATIO)
+            metrics[f"{model}_observed_order"] = observed_order
+            metrics[f"{model}_fine_gci"] = (
+                1.25*medium_fine/(GRID_RATIO**observed_order - 1.0)
+            )
+        else:
+            metrics[f"{model}_observed_order"] = math.nan
+            metrics[f"{model}_fine_gci"] = math.nan
+
+    for level in LEVELS:
+        for model in MODELS:
+            metrics[f"{level}_{model}_execution_seconds"] = costs[level][model]
+            metrics[f"{level}_{model}_iterations"] = float(iterations[level][model])
+            if fr_ranges[level][model] is not None:
+                metrics[f"{level}_{model}_fr1_min"] = fr_ranges[level][model][0]
+                metrics[f"{level}_{model}_fr1_max"] = fr_ranges[level][model][1]
+        metrics[f"{level}_sst_cost_ratio"] = costs[level]["sstcc-on"]/costs[level]["sst"]
+        metrics[f"{level}_sa_cost_ratio"] = costs[level]["sacc-on"]/costs[level]["sa"]
 
     with (results / "summary.csv").open("w", newline="") as stream:
         writer = csv.writer(stream)
@@ -147,6 +188,12 @@ def main() -> int:
             failures.append(
                 f"{model} medium-to-fine relative RMS exceeds 5% ({value:.3g})"
             )
+        order = metrics[f"{model}_observed_order"]
+        gci = metrics[f"{model}_fine_gci"]
+        if not math.isfinite(order) or order <= 0:
+            failures.append(f"{model} has no positive observed order ({order:.3g})")
+        if not math.isfinite(gci):
+            failures.append(f"{model} fine-grid GCI is not finite")
 
     for name, value in metrics.items():
         print(f"{name}={value:.6g}")
