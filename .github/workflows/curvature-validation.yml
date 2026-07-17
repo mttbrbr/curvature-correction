@@ -1,0 +1,88 @@
+name: curvature validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_openfoam_quick:
+        description: Run the OpenFOAM build and quick Smits regression
+        required: false
+        default: false
+        type: boolean
+      run_openfoam_grid:
+        description: Run the three-grid Smits study
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  unit-and-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Deterministic and report-generator tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Generate validation report
+        run: >-
+          python3 tools/generate_curvature_validation_report.py
+          data/curvature-validation/validation-input.json
+          --output-dir reports/curvature-validation
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: curvature-validation-report
+          path: reports/curvature-validation
+
+  openfoam-quick:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_openfoam_quick
+    runs-on: [self-hosted, linux, openfoam-v2412]
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check configured OpenFOAM environment
+        run: ': "${WM_PROJECT_DIR:?runner must preload OpenFOAM.com v2412}"'
+      - name: Build runtime library
+        run: wmake libso src/curvatureCorrectionModels
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Quick native/on/off regression
+        working-directory: tutorials/incompressible/simpleFoam/smitsCurve
+        run: CURVATURE_SKIP_BUILD=1 ./Allrun
+      - name: Upload quick regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smits-quick-regression
+          path: |
+            tutorials/incompressible/simpleFoam/smitsCurve/runs/summary.csv
+            tutorials/incompressible/simpleFoam/smitsCurve/runs/cf-comparison.svg
+
+  openfoam-grid:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_openfoam_grid
+    runs-on: [self-hosted, linux, openfoam-v2412]
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check configured OpenFOAM environment
+        run: ': "${WM_PROJECT_DIR:?runner must preload OpenFOAM.com v2412}"'
+      - name: Build runtime library
+        run: wmake libso src/curvatureCorrectionModels
+      - name: Three-grid validation
+        working-directory: tutorials/incompressible/simpleFoam/smitsCurve
+        run: CURVATURE_SKIP_BUILD=1 ./Allrun-gridStudy
+      - name: Upload grid-study evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smits-grid-study
+          path: |
+            tutorials/incompressible/simpleFoam/smitsCurve/runs/grid-study/summary.csv
+            tutorials/incompressible/simpleFoam/smitsCurve/runs/grid-study/*-grid-convergence.svg
