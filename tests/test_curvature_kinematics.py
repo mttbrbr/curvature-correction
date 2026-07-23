@@ -13,8 +13,10 @@ sys.path.insert(0, str(ROOT))
 
 from tools.curvature_validation.kinematics import (  # noqa: E402
     ZERO,
+    add,
     correction_state,
     from_openfoam_gradient,
+    hodge_dual,
     rotate_tensor,
 )
 
@@ -135,6 +137,58 @@ class KinematicStates(unittest.TestCase):
             self.assertAlmostEqual(original.indicator, transformed.indicator)
             self.assertAlmostEqual(original.factor, transformed.factor)
 
+    def test_zero_frame_rotation_exactly_recovers_inertial_state(self) -> None:
+        dsdt = ((1.0, 0.5, 0), (0.5, -1.0, 0), (0, 0, 0))
+        for family in ("sst", "sa"):
+            inertial = correction_state(SIMPLE_SHEAR, dsdt, family=family)
+            framed = correction_state(
+                SIMPLE_SHEAR, dsdt, family=family, frame_omega=(0, 0, 0)
+            )
+            self.assertEqual(inertial, framed)
+
+    def test_openfoam_absolute_and_published_relative_mrf_agree(self) -> None:
+        frame_omega = (0.0, 0.0, 0.4)
+        absolute_gradient = add(SIMPLE_SHEAR, hodge_dual(frame_omega))
+        dsdt = ((1.0, 0.5, 0), (0.5, -1.0, 0), (0, 0, 0))
+
+        for family in ("sst", "sa"):
+            published = correction_state(
+                SIMPLE_SHEAR,
+                dsdt,
+                family=family,
+                frame_omega=frame_omega,
+                gradient_is_relative=True,
+            )
+            openfoam = correction_state(
+                absolute_gradient,
+                dsdt,
+                family=family,
+                frame_omega=frame_omega,
+            )
+            for first, second in zip(published.strain, openfoam.strain):
+                for first_value, second_value in zip(first, second):
+                    self.assertAlmostEqual(first_value, second_value)
+            for first, second in zip(published.rotation, openfoam.rotation):
+                for first_value, second_value in zip(first, second):
+                    self.assertAlmostEqual(first_value, second_value)
+            for first, second in zip(
+                published.material_derivative_strain,
+                openfoam.material_derivative_strain,
+            ):
+                for first_value, second_value in zip(first, second):
+                    self.assertAlmostEqual(first_value, second_value)
+            self.assertAlmostEqual(published.indicator, openfoam.indicator)
+            self.assertAlmostEqual(published.factor, openfoam.factor)
+
+    def test_rotating_basis_term_has_published_sign(self) -> None:
+        state = correction_state(
+            PURE_STRAIN, family="sa", frame_omega=(0, 0, 0.5)
+        )
+        self.assertEqual(
+            state.material_derivative_strain,
+            ((0.0, 2.0, 0.0), (2.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+        )
+
     def test_openfoam_gradient_storage_conversion(self) -> None:
         stored = tuple(zip(*SIMPLE_SHEAR))
         self.assertEqual(from_openfoam_gradient(stored), SIMPLE_SHEAR)
@@ -160,6 +214,8 @@ class KinematicStates(unittest.TestCase):
                 correction_state(((bad, 0, 0), (0, 0, 0), (0, 0, 0)), family="sst")
             with self.assertRaises(ValueError):
                 correction_state(ZERO, family="sa", cr1=bad)
+            with self.assertRaises(ValueError):
+                correction_state(ZERO, family="sa", frame_omega=(0, 0, bad))
 
 
 class SourceContract(unittest.TestCase):
@@ -167,9 +223,15 @@ class SourceContract(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.source = (
-            ROOT / "src/curvatureCorrectionModels/common/curvatureFunctions.C"
-        ).read_text()
+        source_root = ROOT / "src/curvatureCorrectionModels"
+        cls.source = (source_root / "common/curvatureFunctions.C").read_text()
+        cls.model_sources = "\n".join(
+            (source_root / path).read_text()
+            for path in (
+                "kOmegaSSTCC/kOmegaSSTCC.C",
+                "SpalartAllmarasCC/SpalartAllmarasCC.C",
+            )
+        )
 
     def test_sst_denominator_and_clipping_contract(self) -> None:
         self.assertIn("max(sqr(strainRate), 0.09*sqr(omega))", self.source)
@@ -185,6 +247,14 @@ class SourceContract(unittest.TestCase):
         self.assertIn("symm(fvc::grad(fvc::ddt(U)))", self.source)
         self.assertIn('fvc::div(phi, strain, "div(phi,U)")', self.source)
         self.assertIn("- strain*fvc::div(phi)", self.source)
+
+    def test_mrf_source_contract(self) -> None:
+        self.assertIn("mesh.csorted<IOMRFZoneList>()", self.source)
+        self.assertIn("const volTensorField frameRotation(*OmegaRot)", self.source)
+        self.assertIn("(frameRotation & strain) - (strain & frameRotation)", self.source)
+        self.assertEqual(
+            self.model_sources.count("updateMRFAngularVelocity(OmegaRot_)"), 2
+        )
 
 
 if __name__ == "__main__":

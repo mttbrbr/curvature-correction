@@ -28,6 +28,7 @@ class kOmegaSSTCC
     //- Runtime diagnostic written for post-processing.  GbyNu0() is const,
     //  therefore the cached field must be mutable.
     mutable volScalarField fr1_;
+    mutable volVectorField OmegaRot_;
 
     kOmegaSSTCC(const kOmegaSSTCC&) = delete;
     void operator=(const kOmegaSSTCC&) = delete;

@@ -21,6 +21,7 @@ class SpalartAllmarasCC
     dimensionedScalar Cr2_;
     dimensionedScalar Cr3_;
     volScalarField fr1_;
+    volVectorField OmegaRot_;
 
     SpalartAllmarasCC(const SpalartAllmarasCC&) = delete;
     void operator=(const SpalartAllmarasCC&) = delete;

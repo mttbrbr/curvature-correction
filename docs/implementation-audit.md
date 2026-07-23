@@ -33,7 +33,7 @@ consistent. The Lagrangian derivative is discretised as
 
 For a volumetric velocity flux the final two terms recover `U.grad(S)`, also on
 a non-solenoidal discrete field. For `steadyState` the first term is zero. The
-implementation is in `common/curvatureFunctions.C:14-27`; tensor construction
+implementation is in `common/curvatureFunctions.C:16-49`; tensor construction
 and invariants are at lines 45-69 (SST) and 93-119 (SA).
 
 All terms are dimensionally consistent. `S`, `W`, and `omega` have dimensions
@@ -96,7 +96,7 @@ r^*=S/W,\qquad D^2=\tfrac12(S^2+W^2),
 \]
 
 with the same functional form for `fr1`, using `Cr1=1`, `Cr2=12`, and `Cr3=1`.
-In accordance with SA-RC, it is not clipped (`curvatureFunctions.C:121-127`).
+In accordance with SA-RC, it is not clipped (`curvatureFunctions.C:241-247`).
 
 The native production
 `Cb1*(1-ft2)*Stilda*nuTilda` becomes
@@ -167,14 +167,18 @@ The principal risks are:
 ## Frame invariance
 
 The scalar contractions are invariant under a constant orthogonal change of
-Cartesian basis; the deterministic tests verify this. The published equations
-for a rotating calculation frame additionally modify `W_ij` with
-`Omega_rot` and add the corresponding `Omega_rot` term to `DS_ij/Dt`. Neither
-term exists here. Therefore the implementation is complete only in an inertial
-frame and must not be claimed frame-invariant for MRF/rotating-frame use.
-Consequently a rotating-plane-channel test performed in a rotating reference
-frame would test a known-incomplete equation and has not been treated as valid
-evidence.
+Cartesian basis. For OpenFOAM.com v2412 MRF, `U` is stored as absolute velocity
+while convection uses the relative flux. Consequently `-skew(grad(U))` already
+contains the published frame contribution to `W`; adding `OmegaRot` there would
+double-count rotation. The implementation instead adds only the rotating-basis
+term `A&S - S&A`, with `A=*OmegaRot`, to `DS/Dt`.
+
+`OmegaRot` is rebuilt at every correction from the registered `IOMRFZoneList`,
+supporting non-overlapping active cell zones and time-dependent `Function1`
+angular velocity. Deterministic tests verify equivalence between the published
+relative-gradient representation and OpenFOAM absolute-velocity representation.
+A runtime MRF smoke test verifies zone mapping, finite execution, diagnostic
+output and a two-rank restart. Physical rotating-channel validation remains outstanding.
 
 ## Literature comparison and disposition
 
@@ -184,8 +188,9 @@ evidence.
 - SST formula, constants, `D`, denominator, clipping, and multiplication of
   both production terms agree with the NASA TMR SST-RC definition and
   Smirnov--Menter (2009).
-- The rotating-frame terms explicitly present in both published definitions are
-  omitted. This is documented in the repository and is a material scope limit.
+- The rotating-frame terms from both published definitions are implemented for
+  the OpenFOAM.com v2412 MRF absolute-velocity convention. The implementation
+  remains unvalidated for SRF, moving-mesh, overset and 6DoF formulations.
 - The SST correction is attached to OpenFOAM's SST-2003-like parent. The model
   name/documentation should identify this base variant precisely.
 
@@ -196,7 +201,6 @@ Primary references:
 - <https://doi.org/10.2514/2.1058>
 - <https://doi.org/10.1115/1.3070573>
 
-The implementation is formula-consistent within its stated inertial-frame
-scope, but the audit alone cannot support merge readiness. Rotating-frame
+The implementation is formula-consistent within its stated inertial and OpenFOAM.com v2412 MRF scope, but the audit alone cannot support merge readiness. Rotating-frame
 support, neutral-flow regression evidence, independent concave/rotating
 benchmarks, and broader validation remain separate acceptance gates.

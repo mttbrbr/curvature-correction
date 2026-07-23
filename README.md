@@ -16,9 +16,10 @@ Both implementations include the complete material derivative
 `DS/Dt = dS/dt + U.grad(S)`. The time contribution is obtained from the stored
 velocity time levels and is zero when a steady-state time scheme is selected.
 
-> **Current scope:** the equations are complete for an inertial, non-rotating
-> reference frame (`OmegaRot=0`). Explicitly rotating reference frames/MRF need
-> the additional frame-rotation terms from the papers and are not yet supported.
+> **Current scope:** inertial calculations and OpenFOAM.com v2412 MRF zones are
+> supported. MRF angular velocity is discovered automatically from the registered
+> `IOMRFZoneList`; SRF, moving-mesh, overset and 6DoF frame motion remain outside
+> the validated scope.
 
 ## References
 
@@ -88,9 +89,10 @@ SA-RC deliberately does not bound `fr1`: negative production in strongly
 stabilising rotation/curvature is part of the published model. The SA case must
 provide the standard `nuTilda` field instead of `k` and `omega`. All parent-model
 coefficients remain available in the corresponding coefficient dictionary. The
-custom models write the current correction factor as the `fr1` volume field at
-every normal OpenFOAM write time; this diagnostic is especially useful in
-ParaView.
+custom models write the current correction factor as `fr1` and the detected
+per-cell frame angular velocity as `OmegaRot` at every normal OpenFOAM write
+time. In MRF cases `OmegaRot` is populated inside each active MRF cell zone and
+is zero elsewhere; no additional model coefficient is required.
 
 ## Deterministic verification and validation report
 
@@ -104,11 +106,19 @@ invariance:
 python3 -m unittest discover -s tests -v
 ```
 
+With OpenFOAM v2412 loaded, the automatic MRF mapping and a two-rank restart
+are exercised with:
+
+```bash
+tests/run_mrf_smoke.sh
+```
+
 The detailed [implementation audit](docs/implementation-audit.md) maps the
 equations to source lines, compares them with NASA TMR, records dimensional and
-asymptotic checks, and identifies numerical/model-scope risks. In particular,
-the correction currently supports inertial frames only and the OpenFOAM v2412
-SST parent has SST-2003 characteristics.
+asymptotic checks, and identifies numerical/model-scope risks. The MRF implementation accounts for OpenFOAM v2412 storing absolute `U` while
+using relative convective fluxes. Its tensor algebra and runtime mapping are
+tested, but a physical rotating-channel validation is still required. The
+OpenFOAM v2412 SST parent has SST-2003 characteristics.
 
 After completing the three-grid tutorial, refresh the lightweight committed
 evidence and generate Markdown, HTML, JSON metrics, and SVG plots with:

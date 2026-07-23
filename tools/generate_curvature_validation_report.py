@@ -299,7 +299,7 @@ def markdown_report(result: dict[str, Any]) -> str:
     lines = [
         f"# {meta.get('title', 'Curvature-correction validation report')}",
         "",
-        f"Generated from schema v{result['schema_version']}. Commit: `{meta.get('commit', 'not recorded')}`. ",
+        f"Generated from schema v{result['schema_version']}. Commit: `{meta.get('commit', 'not recorded')}`.",
         "",
         "## Executive summary",
         "",

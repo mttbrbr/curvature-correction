@@ -15,6 +15,7 @@ import math
 from typing import Iterable, Sequence
 
 Tensor = tuple[tuple[float, float, float], ...]
+Vector = tuple[float, float, float]
 
 
 def tensor(rows: Sequence[Sequence[float]]) -> Tensor:
@@ -23,6 +24,15 @@ def tensor(rows: Sequence[Sequence[float]]) -> Tensor:
     result = tuple(tuple(float(value) for value in row) for row in rows)
     if not all(math.isfinite(value) for row in result for value in row):
         raise ValueError("tensor input contains NaN or infinity")
+    return result
+
+
+def vector(values: Sequence[float]) -> Vector:
+    if len(values) != 3:
+        raise ValueError("a 3-component vector is required")
+    result = tuple(float(value) for value in values)
+    if not all(math.isfinite(value) for value in result):
+        raise ValueError("vector input contains NaN or infinity")
     return result
 
 
@@ -50,6 +60,23 @@ def antisymmetric(value: Tensor) -> Tensor:
     )
 
 
+def add(first: Tensor, second: Tensor) -> Tensor:
+    return tensor(
+        tuple(tuple(first[i][j] + second[i][j] for j in range(3)) for i in range(3))
+    )
+
+
+def subtract(first: Tensor, second: Tensor) -> Tensor:
+    return tensor(
+        tuple(tuple(first[i][j] - second[i][j] for j in range(3)) for i in range(3))
+    )
+
+
+def hodge_dual(value: Sequence[float]) -> Tensor:
+    x, y, z = vector(value)
+    return tensor(((0, -z, y), (z, 0, -x), (-y, x, 0)))
+
+
 def matmul(first: Tensor, second: Tensor) -> Tensor:
     return tensor(
         tuple(
@@ -71,6 +98,7 @@ def rate(value: Tensor) -> float:
 class CorrectionState:
     strain: Tensor
     rotation: Tensor
+    material_derivative_strain: Tensor
     strain_rate: float
     rotation_rate: float
     r_star: float
@@ -92,6 +120,8 @@ def correction_state(
     material_derivative_strain: Sequence[Sequence[float]] = ZERO,
     *,
     family: str,
+    frame_omega: Sequence[float] = (0.0, 0.0, 0.0),
+    gradient_is_relative: bool = False,
     omega: float = 1.0,
     cr1: float = 1.0,
     cr2: float | None = None,
@@ -105,9 +135,15 @@ def correction_state(
     small_rate: float = 1.0e-30,
     small_fourth_rate: float = 1.0e-120,
 ) -> CorrectionState:
-    """Evaluate the exact inertial-frame algebra used by the C++ models."""
+    """Evaluate the RC algebra in inertial or rotating-frame form.
+
+    OpenFOAM MRF stores an absolute velocity gradient, while the published
+    equations use a relative gradient plus the frame rotation.  Set
+    ``gradient_is_relative`` only for the latter representation.
+    """
     gradient = tensor(grad_u)
     dsdt = tensor(material_derivative_strain)
+    frame_rotation = hodge_dual(frame_omega)
     scalars: Iterable[float] = (
         omega,
         cr1,
@@ -137,6 +173,12 @@ def correction_state(
 
     strain = symmetric(gradient)
     rotation = antisymmetric(gradient)
+    if gradient_is_relative:
+        rotation = add(rotation, frame_rotation)
+    dsdt = add(
+        dsdt,
+        subtract(matmul(frame_rotation, strain), matmul(strain, frame_rotation)),
+    )
     strain_rate = rate(strain)
     rotation_rate = rate(rotation)
     r_star = strain_rate / max(rotation_rate, small_rate)
@@ -165,6 +207,7 @@ def correction_state(
     return CorrectionState(
         strain=strain,
         rotation=rotation,
+        material_derivative_strain=dsdt,
         strain_rate=strain_rate,
         rotation_rate=rotation_rate,
         r_star=r_star,

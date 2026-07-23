@@ -20,11 +20,16 @@ tmp<volScalarField::Internal> kOmegaSSTCC<BasicTurbulenceModel>::GbyNu0
 
     if (curvatureCorrection_)
     {
+        const bool rotatingFrame =
+            curvatureCorrection::updateMRFAngularVelocity(OmegaRot_);
+
         fr1_ = curvatureCorrection::sstCorrectionFactor
         (
             gradU,
             this->U_,
             this->phi_,
+            OmegaRot_,
+            rotatingFrame,
             this->omega_,
             Cr1_,
             Cr2_,
@@ -38,6 +43,10 @@ tmp<volScalarField::Internal> kOmegaSSTCC<BasicTurbulenceModel>::GbyNu0
     else
     {
         fr1_ = scalar(1);
+        OmegaRot_ = dimensionedVector
+        (
+            "zeroOmegaRot", dimless/dimTime, vector::zero
+        );
     }
 
     return tProduction;
@@ -124,6 +133,19 @@ kOmegaSSTCC<BasicTurbulenceModel>::kOmegaSSTCC
         ),
         this->mesh_,
         dimensionedScalar(dimless, scalar(1))
+    ),
+    OmegaRot_
+    (
+        IOobject
+        (
+            "OmegaRot",
+            this->runTime_.timeName(),
+            this->mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        this->mesh_,
+        dimensionedVector(dimless/dimTime, vector::zero)
     )
 {
     if (frMin_.value() < 0)

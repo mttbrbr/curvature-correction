@@ -1,20 +1,20 @@
 # SA-RC and SST-2003RC curvature-correction verification and validation
 
-Generated from schema v1. Commit: `validation/curvature-correction based on 1961152`. 
+Generated from schema v1. Commit: `MRF implementation working tree based on 8cf093c`.
 
 ## Executive summary
 
-The implemented inertial-frame SA-RC and Smirnov-Menter correction algebra agrees with the published NASA TMR definitions, and deterministic tests plus native/correction-off CFD regression verify the implementation paths. On the converged three-grid Smits convex-curvature case both corrections produce the expected reduction in convex-wall Cf; profile differences contract with refinement. This is only one curvature family, however. No neutral benchmark, rotating-channel series, independent concave case, separated-flow benchmark, Reynolds/rotation-number sweep, or high-fidelity 3-D validation is available. The rotating-frame OmegaRot terms are not implemented. The correction is therefore not ready for an unrestricted model merge.
+The implemented SA-RC and SST-2003RC algebra agrees with the published NASA TMR definitions in inertial and OpenFOAM.com v2412 MRF representations. Deterministic equivalence tests and a runtime MRF smoke test verify automatic angular-velocity mapping and the rotating-basis term. On the converged three-grid Smits convex-curvature case both corrections produce the expected reduction in convex-wall Cf. No neutral benchmark, physically validated rotating-channel series, independent concave case, separated-flow benchmark, Reynolds/rotation-number sweep, or high-fidelity 3-D validation is available. The correction is therefore not ready for an unrestricted model merge.
 
 **Final recommendation: richiede modifiche e validazione aggiuntiva prima del merge definitivo**
 
 ## Implementation audit
 
-Both models compute S, W, rStar and a material-derivative curvature invariant in common/curvatureFunctions.C. SST multiplies the parent raw production before native k/omega production limiters. SA modifies only Cb1 production from (1-ft2) to (fr1-ft2); destruction, Stilda and viscosity relations remain native. fr1 is AUTO_WRITE.
+Both models compute S, W, rStar and a material-derivative curvature invariant in common/curvatureFunctions.C. SST multiplies the parent raw production before native k/omega production limiters. SA modifies only Cb1 production from (1-ft2) to (fr1-ft2). Active OpenFOAM.com v2412 MRF zones are discovered automatically, and fr1 plus per-cell OmegaRot are AUTO_WRITE.
 
 ### Effective formulas
 
-Common: S=sqrt(2 Sij Sij), W=sqrt(2 Wij Wij), r*=S/max(W,SMALL). SST: D2=max(S2,0.09 omega2), rhat=2 Wik Sjk DSij/Dt /(W D3), fr1=clip((1+Cr1) 2r*/(1+r*) [1-Cr3 atan(Cr2 rhat)]-Cr1,frMin,frMax). SA: D2=(S2+W2)/2, rtilde=2 Wik Sjk DSij/Dt /D4, with the same unbounded functional form. DS/Dt=symm(grad(ddt(U)))+div(phi,S)-S div(phi).
+Common: S=sqrt(2 Sij Sij), W=sqrt(2 Wij Wij), r*=S/max(W,SMALL). For OpenFOAM v2412 MRF, absolute U means W=-skew(gradU) already contains the frame contribution; DS/Dt gains A.S-S.A with A=*OmegaRot while convection uses relative phi. SST: D2=max(S2,0.09 omega2), rhat=2 Wik Sjk DSij/Dt /(W D3), fr1=clip((1+Cr1) 2r*/(1+r*) [1-Cr3 atan(Cr2 rhat)]-Cr1,frMin,frMax). SA uses D2=(S2+W2)/2 and the same unbounded functional form.
 
 ### Constants
 
@@ -31,16 +31,17 @@ Common: S=sqrt(2 Sij Sij), W=sqrt(2 Wij Wij), r*=S/max(W,SMALL). SST: D2=max(S2,
 
 ### Code map
 
-- `src/curvatureCorrectionModels/common/curvatureFunctions.C:14` — material derivative of strain
-- `src/curvatureCorrectionModels/common/curvatureFunctions.C:32` — SST correction factor and clipping
-- `src/curvatureCorrectionModels/common/curvatureFunctions.C:83` — unbounded SA correction factor
+- `src/curvatureCorrectionModels/common/curvatureFunctions.C:16` — material derivative of strain and rotating-basis term
+- `src/curvatureCorrectionModels/common/curvatureFunctions.C:53` — automatic per-cell MRF angular-velocity mapping
+- `src/curvatureCorrectionModels/common/curvatureFunctions.C:136` — SST correction factor and clipping
+- `src/curvatureCorrectionModels/common/curvatureFunctions.C:195` — unbounded SA correction factor
 - `src/curvatureCorrectionModels/kOmegaSSTCC/kOmegaSSTCC.C:10` — SST raw-production override
 - `src/curvatureCorrectionModels/SpalartAllmarasCC/SpalartAllmarasCC.C:98` — SA transport equation with corrected production
 - `docs/implementation-audit.md` — complete derivation, parent comparison and asymptotic audit
 
 ### Numerical and modelling risks
 
-- **high** — Published rotating-frame OmegaRot terms are absent, so MRF/rotating-frame equations are incomplete. Recommendation: Implement and test frame-rotation terms or enforce/document inertial-frame-only use.
+- **high** — OpenFOAM.com v2412 MRF terms pass algebraic and runtime smoke tests but lack a physical rotating-flow validation benchmark. Recommendation: Validate against a rotating channel at multiple rotation numbers before claiming predictive MRF support.
 - **high** — No neutral, rotating, independent concave, or separated-flow validation exists. Recommendation: Do not infer general model validity from Smits convex curvature.
 - **medium** — Production C++ has no explicit finite-value guards for coefficients or invariants; NaN/Inf can propagate. Recommendation: Add fail-fast coefficient validation and runtime finite diagnostics.
 - **medium** — SA fr1 is deliberately unbounded and reached about -3.24 to 9.17 on the fine Smits grid. Recommendation: Report production-weighted tails and stability across independent cases.
@@ -54,26 +55,26 @@ The SA function, D4 denominator, constants, unbounded factor, and placement on C
 
 ## Merge blockers
 
-- The formulation is incomplete and unverified in rotating reference frames because the published OmegaRot terms are absent.
+- Automatic OpenFOAM.com v2412 MRF support is implemented and smoke-tested, but no physical rotating-flow benchmark with reference evidence has been completed.
 - No neutral CFD benchmark demonstrates that enabling the correction remains neutral when curvature and rotation effects are absent; correction-off recovery is exact but answers a different question.
 - No independent validation benchmark outside the available Smits convex-curvature family has converged reference evidence.
 - Production C++ lacks fail-fast checks for NaN, Inf and non-finite coefficients/intermediate fields.
 - SST clipping has not been quantified by clipped volume, frequency, production weighting or spatial location.
 - SA fr1 is unbounded, reached approximately 9.17 on the fine Smits grid, and has no application-specific upper-limit justification.
 - Curvature/rotation indicator, base production, corrected production, production ratio and clipping-mask fields are not exported.
-- The CI pipeline is prepared locally but has not been published or executed in GitHub because the PAT lacks workflow scope.
+- The CI workflow is published, but a successful GitHub execution of the self-hosted OpenFOAM jobs remains unverified.
 
 ## Current validation status
 
 - Verified for the principal algebraic and source-integration aspects in an inertial reference frame.
 - Smits convex-wall results are promising and consistent with the expected stabilizing effect of convex curvature.
 - Neutral behavior with the correction enabled is not demonstrated by a neutral CFD benchmark.
-- Concave curvature, stabilizing/destabilizing rotation, rotating frames and separated curved flows remain unverified.
+- Concave curvature, physical stabilizing/destabilizing rotation trends and separated curved flows remain unverified; MRF algebra and runtime mapping are verified only by deterministic and smoke tests.
 - Robustness across grids is demonstrated only for Smits Cf; scheme, y+, clipping and broader benchmark robustness remain unverified.
 - No regression is observed when the correction is disabled, but regression with the correction enabled on neutral flows remains unverified.
 ## Verification
 
-Twenty-five deterministic Python tests cover tensor invariants, material-derivative source contract, asymptotes, clipping, opposite curvature senses, coefficient/data validation, report metrics and report failure modes. The OpenFOAM library builds under v2412. Native and correction-off Cf agree exactly in the quick regression; full-field comparisons use relative L-infinity <= 1e-12. Serial restart and four-rank MPI restart are checked independently at 5e-4.
+Twenty-nine deterministic Python tests cover tensor invariants, material-derivative source contract, rotating-frame representation equivalence, asymptotes, clipping, opposite curvature senses, coefficient/data validation, report metrics and report failure modes. The OpenFOAM library builds under v2412, and an automatic-MRF smoke test verifies OmegaRot=100 rad/s throughout the active zone in serial execution and a two-rank restart. Native and correction-off Cf agree exactly in the quick regression; full-field comparisons use relative L-infinity <= 1e-12. Serial restart and four-rank MPI restart are checked independently at 5e-4.
 
 ## Validation matrix
 
@@ -207,7 +208,7 @@ Only an algebraic +/-10% Cr2 sweep is included; it demonstrates smooth indicator
 
 | Criterion | Critical | Status | Evidence |
 | --- | --- | --- | --- |
-| All critical deterministic unit tests pass | True | pass | 25/25 Python tests passed; 18 directly cover kinematics/source contract |
+| All critical deterministic unit tests pass | True | pass | 29/29 Python tests passed; 22 cover kinematics, MRF representation and source contract |
 | No NaN or Inf in executed tests | True | pass | oracle rejects non-finite input; grid analyser scanned 12 solver logs and all extracted fields were finite |
 | Correction-off exactly recovers parent | True | pass | quick Cf relative error 0; field tolerance 1e-12 |
 | No significant regression on neutral CFD benchmarks | True | not-verified | no flat plate, non-rotating channel or attached neutral airfoil run |
@@ -217,12 +218,12 @@ Only an algebraic +/-10% Cr2 sweep is included; it demonstrates smooth indicator
 | Clipping is not dominant | True | not-verified | SST reaches both bounds; volume/production-weighted clipping fraction is not written |
 | Computational cost is documented | False | pass | fine corrected/base execution ratios: SST 1.569, SA 1.150 |
 | Model and evidence limitations are explicit | False | pass | audit and report list frame, Boussinesq, benchmark, diagnostic and uncertainty limits |
-| Results are reproducible from repository files | True | pass | versioned resources/hashes, runners, collector, schema, generator, tests and CI are included |
+| Results are reproducible from repository files | True | pass | versioned resources/hashes, runners, collector, schema, generator, deterministic tests, MRF smoke test and CI are included |
 
 ## Missing or non-conclusive work
 
 - Flat-plate ZPG, non-rotating channel, and attached-boundary-layer neutral regressions were not available in the repository.
-- Rotating plane channel at three rotation numbers was not run because published rotating-frame terms are not implemented and no case/reference data are present.
+- Rotating plane channel at three rotation numbers was not run because no case/reference data are present; the MRF equations and automatic zone mapping are now implemented.
 - Independent convex and concave boundary-layer cases were not available; Smits concave-side 2-D results are not a definitive discriminator because Gortler structures are three-dimensional.
 - U-bend/S-bend/curved diffuser with pressure loss and secondary-flow reference data was not available.
 - Periodic hills, curved backward-facing step, or another separation benchmark was not available.
@@ -235,7 +236,7 @@ Only an algebraic +/-10% Cr2 sweep is included; it demonstrates smooth indicator
 
 ## Known issues and limitations
 
-- The explicit OmegaRot additions in W and DS/Dt are absent; use in MRF/rotating frames is outside validated scope.
+- Automatic frame correction targets OpenFOAM.com v2412 IOMRFZoneList with absolute U and relative convective flux; SRF, moving-mesh, overset and 6DoF conventions remain outside validated scope.
 - Linear eddy-viscosity/Boussinesq models cannot generally represent curvature-driven anisotropy and secondary stresses like a Reynolds-stress model.
 - Smits OpenFOAM calculations are incompressible while the retained TMBWG computations are essentially incompressible compressible solutions at Mach 0.093.
 - All nested Smits meshes intentionally fail one check for very high boundary-layer-cell aspect ratio; topology, skewness and non-orthogonality pass.
@@ -260,6 +261,7 @@ Only an algebraic +/-10% Cr2 sweep is included; it demonstrates smooth indicator
 ```bash
 source /home/mttbrbr/OpenFOAM/OpenFOAM-v2412/etc/bashrc
 wmake libso src/curvatureCorrectionModels
+tests/run_mrf_smoke.sh
 ```
 
 ```bash
@@ -286,5 +288,5 @@ cd tutorials/incompressible/simpleFoam/flapTipVortex
 
 ## Conclusion
 
-SA-RC and SST correction formulas are verified for the principal implementation aspects in an inertial frame and show the expected stabilizing trend on a grid-refined convex-curvature benchmark. The evidence does not establish neutral CFD behavior, concave/rotating-frame response, or general predictive improvement. The change may remain experimental, or be integrated only behind an option explicitly disabled by default, while the listed conditions are completed. Final recommendation: richiede modifiche e validazione aggiuntiva prima del merge definitivo.
+SA-RC and SST correction formulas are verified for their principal implementation aspects in inertial and OpenFOAM.com v2412 MRF representations and show the expected stabilizing trend on a grid-refined convex-curvature benchmark. The evidence does not establish neutral CFD behavior, physically validated rotating-frame response, concave-flow response, or general predictive improvement. The change may remain experimental, or be integrated only behind an option explicitly disabled by default, while the listed conditions are completed. Final recommendation: richiede modifiche e validazione aggiuntiva prima del merge definitivo.
 

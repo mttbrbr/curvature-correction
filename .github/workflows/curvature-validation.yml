@@ -53,6 +53,8 @@ jobs:
         run: wmake libso src/curvatureCorrectionModels
       - name: Unit tests
         run: python3 -m unittest discover -s tests -v
+      - name: Automatic MRF integration smoke test
+        run: tests/run_mrf_smoke.sh
       - name: Quick native/on/off regression
         working-directory: tutorials/incompressible/simpleFoam/smitsCurve
         run: CURVATURE_SKIP_BUILD=1 ./Allrun
