@@ -181,8 +181,12 @@ term `A&S - S&A`, with `A=*OmegaRot`, to `DS/Dt`.
 supporting non-overlapping active cell zones and time-dependent `Function1`
 angular velocity. Deterministic tests verify equivalence between the published
 relative-gradient representation and OpenFOAM absolute-velocity representation.
-A runtime MRF smoke test verifies zone mapping, finite execution, diagnostic
-output and a two-rank restart. Physical rotating-channel validation remains outstanding.
+A standalone runtime matrix verifies no-MRF behaviour, inactive and multiple
+disjoint zones, opposite angular velocities, time-varying `Function1` omega,
+boundary consistency, serial/MPI operation, and fatal rejection of overlaps
+and duplicate registered lists. A solver MRF smoke test additionally verifies
+finite execution, diagnostic output and a two-rank restart. Physical
+rotating-channel validation remains outstanding.
 
 ## Literature comparison and disposition
 

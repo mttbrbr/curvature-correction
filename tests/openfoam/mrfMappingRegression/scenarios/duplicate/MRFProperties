@@ -1,0 +1,16 @@
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object MRFProperties;
+}
+
+zonePositive
+{
+    cellZone positive;
+    active yes;
+    nonRotatingPatches ();
+    origin (0 0 0);
+    axis (0 0 1);
+    omega constant 100;
+}

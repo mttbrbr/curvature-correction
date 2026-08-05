@@ -1,0 +1,26 @@
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object MRFProperties;
+}
+
+zoneA
+{
+    cellZone overlapA;
+    active yes;
+    nonRotatingPatches ();
+    origin (0 0 0);
+    axis (0 0 1);
+    omega constant 100;
+}
+
+zoneB
+{
+    cellZone overlapB;
+    active yes;
+    nonRotatingPatches ();
+    origin (0 0 0);
+    axis (0 0 1);
+    omega constant -40;
+}

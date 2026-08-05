@@ -1,0 +1,10 @@
+EXE_INC = \
+    -I../../../src/curvatureCorrectionModels/common \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude
+
+EXE_LIBS = \
+    -L$(FOAM_USER_LIBBIN) \
+    -lcurvatureCorrectionModels \
+    -lfiniteVolume \
+    -lmeshTools

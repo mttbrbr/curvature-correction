@@ -1,0 +1,80 @@
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object topoSetDict;
+}
+
+actions
+(
+    {
+        name positiveCells;
+        type cellSet;
+        action new;
+        source boxToCell;
+        box (0 0 -1) (1 1 1);
+    }
+    {
+        name positive;
+        type cellZoneSet;
+        action new;
+        source setToCellZone;
+        set positiveCells;
+    }
+    {
+        name negativeCells;
+        type cellSet;
+        action new;
+        source boxToCell;
+        box (2 0 -1) (3 1 1);
+    }
+    {
+        name negative;
+        type cellZoneSet;
+        action new;
+        source setToCellZone;
+        set negativeCells;
+    }
+    {
+        name inactiveCells;
+        type cellSet;
+        action new;
+        source boxToCell;
+        box (3 0 -1) (4 1 1);
+    }
+    {
+        name inactive;
+        type cellZoneSet;
+        action new;
+        source setToCellZone;
+        set inactiveCells;
+    }
+    {
+        name overlapACells;
+        type cellSet;
+        action new;
+        source boxToCell;
+        box (0 0 -1) (2 1 1);
+    }
+    {
+        name overlapA;
+        type cellZoneSet;
+        action new;
+        source setToCellZone;
+        set overlapACells;
+    }
+    {
+        name overlapBCells;
+        type cellSet;
+        action new;
+        source boxToCell;
+        box (1 0 -1) (3 1 1);
+    }
+    {
+        name overlapB;
+        type cellZoneSet;
+        action new;
+        source setToCellZone;
+        set overlapBCells;
+    }
+);

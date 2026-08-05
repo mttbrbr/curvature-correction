@@ -51,6 +51,8 @@ jobs:
         run: python3 tools/fetch_benchmark_data.py --case smits --case flatplate --case naca0012
       - name: Unit tests
         run: python3 -m unittest discover -s tests -v
+      - name: MRF topology and time-dependence regression
+        run: tests/run_mrf_mapping_regression.sh
       - name: Automatic MRF integration smoke test
         run: tests/run_mrf_smoke.sh
       - name: Transient material-derivative regression

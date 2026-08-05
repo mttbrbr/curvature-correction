@@ -133,11 +133,15 @@ python3 -m unittest discover -s tests -v
 
 With OpenFOAM v2412 loaded, compiled manufactured fields exercise the temporal
 and convective parts of `DS/Dt`, steady-state suppression and both correction
-families. The automatic MRF mapping and a two-rank restart are checked
-separately:
+families. The standalone MRF matrix checks no-MRF behaviour, inactive and
+multiple disjoint zones, opposite angular velocities, a time-varying
+`Function1`, serial/MPI consistency, overlap rejection, and duplicate-registry
+rejection. The solver smoke test separately checks both correction families
+and a two-rank restart:
 
 ```bash
 tests/run_material_derivative_regression.sh
+tests/run_mrf_mapping_regression.sh
 tests/run_mrf_smoke.sh
 ```
 
