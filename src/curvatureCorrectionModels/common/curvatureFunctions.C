@@ -1,9 +1,17 @@
+/*
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright (C) 2026 mttbrbr
+ *
+ * OpenFOAM adapter implementation for rotation/curvature invariants.
+ */
+
 #include "curvatureFunctions.H"
 #include "fvcDdt.H"
 #include "fvcDiv.H"
 #include "fvcGrad.H"
 #include "IOMRFZoneList.H"
 #include "cellZoneMesh.H"
+#include <cmath>
 
 namespace Foam
 {
@@ -12,6 +20,38 @@ namespace curvatureCorrection
 
 namespace
 {
+
+void requireFinite(const volScalarField& field, const word& description)
+{
+    forAll(field, celli)
+    {
+        if (!std::isfinite(field[celli]))
+        {
+            FatalErrorInFunction
+                << description << " contains a non-finite value in cell "
+                << celli << exit(FatalError);
+        }
+    }
+
+    forAll(field.boundaryField(), patchi)
+    {
+        const fvPatchScalarField& patch = field.boundaryField()[patchi];
+
+        forAll(patch, facei)
+        {
+            if (!std::isfinite(patch[facei]))
+            {
+                FatalErrorInFunction
+                    << description << " contains a non-finite value on patch "
+                    << patch.patch().name() << " face " << facei
+                    << exit(FatalError);
+            }
+        }
+    }
+}
+
+} // End anonymous namespace
+
 
 tmp<volSymmTensorField> materialDerivativeOfStrain
 (
@@ -27,7 +67,7 @@ tmp<volSymmTensorField> materialDerivativeOfStrain
     tmp<volSymmTensorField> tDSDt
     (
         symm(fvc::grad(fvc::ddt(U)))
-      + fvc::div(phi, strain, "div(phi,U)")
+      + fvc::div(phi, strain, "div(phi,curvatureStrain)")
       - strain*fvc::div(phi)
     );
 
@@ -46,9 +86,6 @@ tmp<volSymmTensorField> materialDerivativeOfStrain
 
     return tDSDt;
 }
-
-} // End anonymous namespace
-
 
 bool updateMRFAngularVelocity(volVectorField& OmegaRot)
 {
@@ -145,7 +182,9 @@ tmp<volScalarField> sstCorrectionFactor
     const dimensionedScalar& Cr2,
     const dimensionedScalar& Cr3,
     const dimensionedScalar& frMin,
-    const dimensionedScalar& frMax
+    const dimensionedScalar& frMax,
+    volScalarField* indicator,
+    volScalarField* rawFactor
 )
 {
     const volSymmTensorField strain(symm(gradU));
@@ -179,6 +218,7 @@ tmp<volScalarField> sstCorrectionFactor
         (2.0*WS && DSDt)
        /max(rotationRate*D2*sqrt(D2), smallFourthRate)
     );
+    requireFinite(rHat, "SST-RC curvature indicator");
 
     const volScalarField fRotation
     (
@@ -187,8 +227,20 @@ tmp<volScalarField> sstCorrectionFactor
        *(scalar(1) - Cr3*atan(Cr2*rHat))
       - Cr1
     );
+    requireFinite(fRotation, "SST-RC raw correction factor");
 
-    return min(max(fRotation, frMin), frMax);
+    if (indicator)
+    {
+        *indicator = rHat;
+    }
+    if (rawFactor)
+    {
+        *rawFactor = fRotation;
+    }
+
+    tmp<volScalarField> tFactor(min(max(fRotation, frMin), frMax));
+    requireFinite(tFactor(), "SST-RC clipped correction factor");
+    return tFactor;
 }
 
 
@@ -201,7 +253,9 @@ tmp<volScalarField> saCorrectionFactor
     const bool rotatingFrame,
     const dimensionedScalar& Cr1,
     const dimensionedScalar& Cr2,
-    const dimensionedScalar& Cr3
+    const dimensionedScalar& Cr3,
+    volScalarField* indicator,
+    volScalarField* rawFactor
 )
 {
     const volSymmTensorField strain(symm(gradU));
@@ -237,14 +291,29 @@ tmp<volScalarField> saCorrectionFactor
     (
         (2.0*WS && DSDt)/max(sqr(D2), smallFourthRate)
     );
+    requireFinite(rTilde, "SA-RC curvature indicator");
 
     // SA-RC is deliberately not bounded: negative production is part of the
     // published model in strongly stabilising rotation/curvature.
-    return
+    tmp<volScalarField> tFactor
+    (
         (scalar(1) + Cr1)
        *(2.0*rStar/(scalar(1) + rStar))
        *(scalar(1) - Cr3*atan(Cr2*rTilde))
-      - Cr1;
+      - Cr1
+    );
+    requireFinite(tFactor(), "SA-RC correction factor");
+
+    if (indicator)
+    {
+        *indicator = rTilde;
+    }
+    if (rawFactor)
+    {
+        *rawFactor = tFactor();
+    }
+
+    return tFactor;
 }
 
 } // End namespace curvatureCorrection

@@ -84,3 +84,17 @@ tutorials/**/runs/
 # Python analysis cache
 __pycache__/
 *.pyc
+
+# External benchmark data is fetched into .cache and materialized as ignored links.
+tutorials/incompressible/simpleFoam/smitsCurve/resources/**
+!tutorials/incompressible/simpleFoam/smitsCurve/resources/README.md
+tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/**
+!tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/README.md
+tutorials/incompressible/simpleFoam/tmrNaca0012/resources/**
+!tutorials/incompressible/simpleFoam/tmrNaca0012/resources/README.md
+
+# Validation snapshots and plots are generated locally or in CI.
+data/curvature-validation/**
+!data/curvature-validation/README.md
+reports/curvature-validation/**
+!reports/curvature-validation/README.md

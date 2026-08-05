@@ -1,0 +1,14 @@
+Licensing notice
+
+This repository is distributed under more than one licence:
+
+- Project-authored code, tests, tools, documentation, and tutorial orchestration
+  are licensed under the MIT License. The full text is in `LICENSES/MIT.txt`.
+- `src/curvatureCorrectionModels/` is an OpenFOAM adapter derived from and
+  linked with GPL-covered OpenFOAM code. It is licensed under
+  GPL-3.0-or-later. The full text is in `LICENSES/GPL-3.0-or-later.txt`.
+- External benchmark inputs are not distributed in this repository. Their
+  source, revision, checksum, licence, and release status are recorded in
+  `data/benchmark-sources.json` and `THIRD_PARTY.md`.
+
+SPDX expressions in individual files take precedence over this summary.

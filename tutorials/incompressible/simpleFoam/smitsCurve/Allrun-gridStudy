@@ -11,6 +11,19 @@ nProcs=${CURVATURE_MPI_PROCS:-4}
 resume=${CURVATURE_GRID_RESUME:-0}
 startSeconds=$(date +%s)
 
+if ! python3 "$repoDir/tools/fetch_benchmark_data.py" --case smits --verify-only >/dev/null; then
+    echo "ERROR: quick-grid/reference inputs are absent or invalid. Run:" >&2
+    echo "  python3 tools/fetch_benchmark_data.py --case smits" >&2
+    exit 2
+fi
+
+: "${SMITS_MEDIUM_GRID:?set SMITS_MEDIUM_GRID to a lawfully obtained 257x97 PLOT3D grid}"
+: "${SMITS_FINE_GRID:?set SMITS_FINE_GRID to a lawfully obtained 513x193 PLOT3D grid}"
+if [ ! -f "$SMITS_MEDIUM_GRID" ] || [ ! -f "$SMITS_FINE_GRID" ]; then
+    echo "ERROR: a user-supplied Smits grid does not exist" >&2
+    exit 2
+fi
+
 if [ "$nProcs" -lt 2 ]; then
     echo "ERROR: CURVATURE_MPI_PROCS must be at least 2" >&2
     exit 1
@@ -30,8 +43,7 @@ prepareMesh()
 {
     level=$1
     grid=$2
-    compressed=$3
-    expectedCells=$4
+    expectedCells=$3
     meshCase="$resultsDir/$level/_mesh"
 
     if [ "$resume" = 1 ] && [ -d "$meshCase/constant/polyMesh" ]; then
@@ -42,12 +54,15 @@ prepareMesh()
     echo "Preparing $level mesh"
     mkdir -p "$resultsDir/$level"
     cp -a "$tutorialDir/baseCase" "$meshCase"
-    if [ "$compressed" = yes ]; then
-        gzip -cd "$grid" > "$meshCase/grid.p2dfmt"
-        inputGrid="$meshCase/grid.p2dfmt"
-    else
-        inputGrid="$grid"
-    fi
+    case "$grid" in
+        *.gz)
+            gzip -cd "$grid" > "$meshCase/grid.p2dfmt"
+            inputGrid="$meshCase/grid.p2dfmt"
+            ;;
+        *)
+            inputGrid="$grid"
+            ;;
+    esac
 
     plot3dToFoam -case "$meshCase" -2D 0.01 -noBlank "$inputGrid" > "$meshCase/log.plot3dToFoam" 2>&1
     autoPatch -case "$meshCase" -overwrite 20 > "$meshCase/log.autoPatch" 2>&1
@@ -133,9 +148,9 @@ runLevel()
     runCase "$level" sacc-on SpalartAllmarasCC on "$sourceLevel"
 }
 
-prepareMesh level3-129x49 "$tutorialDir/resources/smits_3levdn_129x49.p2dfmt" no 6144
-prepareMesh level2-257x97 "$tutorialDir/resources/smits_2levdn_257x97.p2dfmt.gz" yes 24576
-prepareMesh level1-513x193 "$tutorialDir/resources/smits_1levdn_513x193.p2dfmt.gz" yes 98304
+prepareMesh level3-129x49 "$tutorialDir/resources/smits_3levdn_129x49.p2dfmt" 6144
+prepareMesh level2-257x97 "$SMITS_MEDIUM_GRID" 24576
+prepareMesh level1-513x193 "$SMITS_FINE_GRID" 98304
 
 runLevel level3-129x49
 runLevel level2-257x97 level3-129x49

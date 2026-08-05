@@ -129,9 +129,6 @@ def main() -> int:
         writer.writerows((name, f"{value:.12g}") for name, value in metrics.items())
 
     reference = tutorial / "resources" / "reference"
-    experiment = read_experiment(
-        reference / "Smits_curvature_expdata_reworked2012.dat"
-    )
     write_svg(
         results / "sst-grid-convergence.svg",
         [
@@ -147,7 +144,6 @@ def main() -> int:
                 "#7f0000",
                 False,
             ),
-            ("Experiment", experiment, "#111111", True),
         ],
     )
     write_svg(
@@ -165,7 +161,6 @@ def main() -> int:
                 "#3f007d",
                 False,
             ),
-            ("Experiment", experiment, "#111111", True),
         ],
     )
 

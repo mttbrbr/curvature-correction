@@ -1,3 +1,13 @@
+/*
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright (C) 2011-2016 OpenFOAM Foundation
+ * Copyright (C) 2019-2021 OpenCFD Ltd.
+ * Copyright (C) 2026 mttbrbr
+ *
+ * Derived from the OpenFOAM.com v2412 SpalartAllmaras implementation and
+ * modified to add the Spalart-Shur rotation/curvature correction.
+ */
+
 #include "SpalartAllmarasCC.H"
 #include "bound.H"
 #include "fvOptions.H"
@@ -6,11 +16,49 @@
 #include "fvmDiv.H"
 #include "fvmLaplacian.H"
 #include "fvmSup.H"
+#include <cmath>
 
 namespace Foam
 {
 namespace RASModels
 {
+
+template<class BasicTurbulenceModel>
+void SpalartAllmarasCC<BasicTurbulenceModel>::
+validateCorrectionCoefficients() const
+{
+    const dimensionedScalar* coefficients[] = {&Cr1_, &Cr2_, &Cr3_};
+
+    for (const dimensionedScalar* coefficient : coefficients)
+    {
+        if (!std::isfinite(coefficient->value()))
+        {
+            FatalIOErrorInFunction(this->coeffDict())
+                << coefficient->name() << " must be finite"
+                << exit(FatalIOError);
+        }
+    }
+}
+
+
+template<class BasicTurbulenceModel>
+void SpalartAllmarasCC<BasicTurbulenceModel>::
+updateDiagnosticWriteOptions()
+{
+    const IOobject::writeOption option
+    (
+        writeCurvatureDiagnostics_
+      ? IOobject::AUTO_WRITE
+      : IOobject::NO_WRITE
+    );
+
+    curvatureIndicator_.writeOpt(option);
+    productionBase_.writeOpt(option);
+    productionCorrected_.writeOpt(option);
+    productionRatio_.writeOpt(option);
+    fr1Clipped_.writeOpt(option);
+}
+
 
 template<class BasicTurbulenceModel>
 SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
@@ -33,7 +81,7 @@ SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
     (
         Switch::getOrAddToDict
         (
-            "curvatureCorrection", this->coeffDict_, true
+            "curvatureCorrection", this->coeffDict_, false
         )
     ),
     Cr1_
@@ -55,6 +103,15 @@ SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
         dimensioned<scalar>::getOrAddToDict
         (
             "Cr3", this->coeffDict_, dimless, 1.0
+        )
+    ),
+    writeCurvatureDiagnostics_
+    (
+        Switch::getOrAddToDict
+        (
+            "writeCurvatureDiagnostics",
+            this->coeffDict_,
+            false
         )
     ),
     fr1_
@@ -82,8 +139,76 @@ SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
         ),
         this->mesh_,
         dimensionedVector(dimless/dimTime, vector::zero)
+    ),
+    curvatureIndicator_
+    (
+        IOobject
+        (
+            "curvatureIndicator",
+            this->runTime_.timeName(),
+            this->mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        this->mesh_,
+        dimensionedScalar(dimless, scalar(0))
+    ),
+    productionBase_
+    (
+        IOobject
+        (
+            "productionBase",
+            this->runTime_.timeName(),
+            this->mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        this->mesh_,
+        dimensionedScalar(sqr(dimLength/dimTime), scalar(0))
+    ),
+    productionCorrected_
+    (
+        IOobject
+        (
+            "productionCorrected",
+            this->runTime_.timeName(),
+            this->mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        this->mesh_,
+        dimensionedScalar(sqr(dimLength/dimTime), scalar(0))
+    ),
+    productionRatio_
+    (
+        IOobject
+        (
+            "productionRatio",
+            this->runTime_.timeName(),
+            this->mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        this->mesh_,
+        dimensionedScalar(dimless, scalar(1))
+    ),
+    fr1Clipped_
+    (
+        IOobject
+        (
+            "fr1Clipped",
+            this->runTime_.timeName(),
+            this->mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        this->mesh_,
+        dimensionedScalar(dimless, scalar(0))
     )
 {
+    validateCorrectionCoefficients();
+    updateDiagnosticWriteOptions();
+
     if (type == typeName)
     {
         this->printCoeffs(type);
@@ -105,6 +230,13 @@ bool SpalartAllmarasCC<BasicTurbulenceModel>::read()
     Cr1_.readIfPresent(this->coeffDict());
     Cr2_.readIfPresent(this->coeffDict());
     Cr3_.readIfPresent(this->coeffDict());
+    writeCurvatureDiagnostics_.readIfPresent
+    (
+        "writeCurvatureDiagnostics",
+        this->coeffDict()
+    );
+    validateCorrectionCoefficients();
+    updateDiagnosticWriteOptions();
     return true;
 }
 
@@ -150,9 +282,12 @@ void SpalartAllmarasCC<BasicTurbulenceModel>::correct()
             rotatingFrame,
             Cr1_,
             Cr2_,
-            Cr3_
+            Cr3_,
+            &curvatureIndicator_,
+            &fr1Clipped_
         );
         fr1_.correctBoundaryConditions();
+        fr1Clipped_ = scalar(0);
     }
     else
     {
@@ -161,7 +296,30 @@ void SpalartAllmarasCC<BasicTurbulenceModel>::correct()
         (
             "zeroOmegaRot", dimless/dimTime, vector::zero
         );
+        curvatureIndicator_ = scalar(0);
+        fr1Clipped_ = scalar(0);
     }
+
+    productionBase_ =
+        this->Cb1_*Stilda*this->nuTilda_*(scalar(1) - ft2);
+    productionCorrected_ =
+        this->Cb1_*Stilda*this->nuTilda_*(fr1_ - ft2);
+    productionRatio_ = scalar(1);
+
+    forAll(productionRatio_, celli)
+    {
+        const scalar base = productionBase_[celli];
+
+        if (mag(base) > SMALL)
+        {
+            productionRatio_[celli] = productionCorrected_[celli]/base;
+        }
+    }
+
+    productionBase_.correctBoundaryConditions();
+    productionCorrected_.correctBoundaryConditions();
+    productionRatio_.correctBoundaryConditions();
+    fr1Clipped_.correctBoundaryConditions();
 
     tmp<fvScalarMatrix> nuTildaEqn
     (

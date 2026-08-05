@@ -139,6 +139,23 @@ def classify(
     return "neutral"
 
 
+def classify_neutral(
+    baseline: list[float],
+    corrected: list[float],
+    *,
+    converged: bool,
+    grid_independent: bool | None,
+    neutral_tolerance: float,
+) -> str:
+    if not converged or grid_independent is False:
+        return "non-conclusive"
+    maximum_change = max(
+        abs(after - before) / max(abs(before), EPS)
+        for before, after in zip(baseline, corrected)
+    )
+    return "neutral" if maximum_change <= neutral_tolerance else "worsens"
+
+
 def svg_plot(path: Path, title: str, x: list[float], series: list[tuple[str, list[float], str]]) -> None:
     width, height = 920, 520
     left, right, top, bottom = 78, 24, 48, 62
@@ -223,13 +240,22 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
                 missing_reference.append(f"{benchmark_id}/{dataset_id}")
             base_metrics = weighted_metrics(series["baseline"], series["reference"], series["weight"]) if has_reference else None
             corrected_metrics = weighted_metrics(series["corrected"], series["reference"], series["weight"]) if has_reference else None
-            classification = classify(
-                base_metrics,
-                corrected_metrics,
-                converged=converged,
-                grid_independent=benchmark.get("grid_independent"),
-                neutral_tolerance=neutral_tolerance,
-            )
+            if dataset.get("expected_behavior") == "neutral":
+                classification = classify_neutral(
+                    series["baseline"],
+                    series["corrected"],
+                    converged=converged,
+                    grid_independent=benchmark.get("grid_independent"),
+                    neutral_tolerance=neutral_tolerance,
+                )
+            else:
+                classification = classify(
+                    base_metrics,
+                    corrected_metrics,
+                    converged=converged,
+                    grid_independent=benchmark.get("grid_independent"),
+                    neutral_tolerance=neutral_tolerance,
+                )
             if classification not in VALID_CLASSIFICATIONS:
                 raise AssertionError(classification)
             plot_name = f"{benchmark_id}-{dataset_id}.svg".replace("/", "-")
@@ -260,14 +286,21 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
         analysed_benchmarks.append(item)
 
     critical_failures = []
+    critical_incomplete = []
     for criterion in criteria:
         if not isinstance(criterion, dict):
             raise DataError("each acceptance criterion must be an object")
         status = str(required(criterion, "status", "acceptance criterion"))
         if status not in {"pass", "fail", "not-verified", "not-applicable"}:
             raise DataError(f"invalid acceptance status {status}")
-        if bool(criterion.get("critical", False)) and status == "fail":
-            critical_failures.append(str(criterion.get("id", criterion.get("criterion", "unknown"))))
+        if bool(criterion.get("critical", False)):
+            identifier = str(
+                criterion.get("id", criterion.get("criterion", "unknown"))
+            )
+            if status == "fail":
+                critical_failures.append(identifier)
+            if status != "pass":
+                critical_incomplete.append(identifier)
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -284,6 +317,7 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
         "non_converged": non_converged,
         "missing_reference": missing_reference,
         "critical_failures": critical_failures,
+        "critical_incomplete": critical_incomplete,
     }
 
 
@@ -435,6 +469,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path, help="versioned validation JSON")
     parser.add_argument("--output-dir", type=Path, default=Path("reports/curvature-validation"))
+    parser.add_argument(
+        "--strict-acceptance",
+        action="store_true",
+        help="return 1 unless every critical acceptance criterion passes",
+    )
     return parser.parse_args(argv)
 
 
@@ -459,8 +498,17 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Markdown: {args.output_dir / 'curvature-validation-report.md'}")
     print(f"HTML: {args.output_dir / 'curvature-validation-report.html'}")
     print(f"Metrics: {args.output_dir / 'aggregated-metrics.json'}")
-    if result["critical_failures"]:
-        print("ERROR: critical validation failures: " + ", ".join(result["critical_failures"]), file=sys.stderr)
+    blocking = (
+        result["critical_incomplete"]
+        if args.strict_acceptance
+        else result["critical_failures"]
+    )
+    if blocking:
+        label = "incomplete" if args.strict_acceptance else "failures"
+        print(
+            f"ERROR: critical validation {label}: " + ", ".join(blocking),
+            file=sys.stderr,
+        )
         return 1
     return 0
 

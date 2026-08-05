@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+cd "${0%/*}" || exit 1
+rm -rf runs

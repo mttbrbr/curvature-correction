@@ -12,6 +12,7 @@ divSchemes
 {
     default none;
     div(phi,U) bounded Gauss upwind;
+    div(phi,curvatureStrain) Gauss linear;
     div(phi,k) bounded Gauss upwind;
     div(phi,omega) bounded Gauss upwind;
     div(phi,nuTilda) bounded Gauss upwind;

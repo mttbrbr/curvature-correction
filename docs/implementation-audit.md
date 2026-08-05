@@ -111,15 +111,16 @@ is simply `fr1` unless the user opts into `ft2`.
 
 | Model | Entry | Default | Dimension | Validation |
 | --- | --- | ---: | --- | --- |
-| both | `curvatureCorrection` | `true` | switch | parsed by OpenFOAM |
-| SST | `Cr1` | 1.0 | dimensionless | no finite/range check |
-| SST | `Cr2` | 2.0 | dimensionless | no finite/range check |
-| SST | `Cr3` | 1.0 | dimensionless | no finite/range check |
+| both | `curvatureCorrection` | `false` | switch | parsed by OpenFOAM; explicit opt-in |
+| SST | `Cr1` | 1.0 | dimensionless | finite check |
+| SST | `Cr2` | 2.0 | dimensionless | finite check |
+| SST | `Cr3` | 1.0 | dimensionless | finite check |
 | SST | `frMin` | 0.0 | dimensionless | non-negative, <= `frMax` |
 | SST | `frMax` | 1.25 | dimensionless | >= `frMin` |
-| SA | `Cr1` | 1.0 | dimensionless | no finite/range check |
-| SA | `Cr2` | 12.0 | dimensionless | no finite/range check |
-| SA | `Cr3` | 1.0 | dimensionless | no finite/range check |
+| SA | `Cr1` | 1.0 | dimensionless | finite check |
+| SA | `Cr2` | 12.0 | dimensionless | finite check |
+| SA | `Cr3` | 1.0 | dimensionless | finite check |
+| both | `writeCurvatureDiagnostics` | `false` | switch | opt-in AUTO_WRITE fields |
 
 Parent-model constants are inherited without modification. Important defaults
 for traceability are SST `betaStar=0.09`, `a1=0.31`, `b1=1`, `c1=10`, and SA
@@ -144,10 +145,10 @@ still produce a very large indicator before `atan` saturates.
 
 The principal risks are:
 
-1. There is no explicit finite-value validation for velocity gradients,
-   `omega`, coefficients, intermediate invariants, or `fr1`. NaN/Inf can
-   propagate; the deterministic oracle rejects them, but production C++ does
-   not fail at the point of origin.
+1. Coefficients, curvature indicators, and raw/final correction factors now
+   receive explicit finite checks and fail fast. A non-finite velocity gradient
+   or `omega` is detected when it reaches these invariants, although the message
+   identifies the invariant rather than the upstream field component.
 2. SA is deliberately unbounded. The Smits case observed a broad range of
    `fr1`; stability and clipping-equivalent diagnostics must be assessed per
    application. Negative production is a model feature, not automatically a
@@ -158,11 +159,14 @@ The principal risks are:
 4. SST clips at 1.25 in pure strain, so clipping is not restricted to pathological
    inputs. A volume/production-weighted clipping fraction should be reported;
    min/max alone cannot establish whether clipping is dominant.
-5. The material derivative is scheme- and mesh-dependent. No manufactured
-   solution presently quantifies its discretisation error.
-6. Both models write `fr1`, but do not write the raw indicator, base/corrected
-   production, or a clipping mask. These requested diagnostics require an
-   additional function object or model fields.
+5. The material derivative is scheme- and mesh-dependent. A compiled
+   manufactured-field regression verifies the Euler temporal term, convective
+   term and steady-state suppression on an orthogonal mesh to errors below
+   `3e-12`; broader mesh and scheme sensitivity remains unquantified.
+6. Both models always write `fr1`; opt-in diagnostics now provide the raw
+   indicator, base/corrected production, their safe ratio, and an SST clipping
+   mask. SA reports an all-zero mask because its published factor is unbounded.
+   These fields add disk cost and therefore default to `NO_WRITE`.
 
 ## Frame invariance
 
@@ -201,6 +205,4 @@ Primary references:
 - <https://doi.org/10.2514/2.1058>
 - <https://doi.org/10.1115/1.3070573>
 
-The implementation is formula-consistent within its stated inertial and OpenFOAM.com v2412 MRF scope, but the audit alone cannot support merge readiness. Rotating-frame
-support, neutral-flow regression evidence, independent concave/rotating
-benchmarks, and broader validation remain separate acceptance gates.
+The implementation is formula-consistent within its stated inertial and OpenFOAM.com v2412 MRF scope, but the audit alone cannot support merge readiness. Neutral-flow regression now passes on two TMR 2DZP grids. Physical rotating-flow support, independent concave/rotating benchmarks, and broader validation remain separate acceptance gates.

@@ -1,3 +1,13 @@
+/*
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright (C) 2011-2016 OpenFOAM Foundation
+ * Copyright (C) 2019 OpenCFD Ltd.
+ * Copyright (C) 2026 mttbrbr
+ *
+ * Derived from the OpenFOAM.com v2412 kOmegaSST interface and modified to
+ * expose the Smirnov-Menter rotation/curvature correction.
+ */
+
 #ifndef kOmegaSSTCC_H
 #define kOmegaSSTCC_H
 
@@ -24,14 +34,22 @@ class kOmegaSSTCC
     dimensionedScalar Cr3_;
     dimensionedScalar frMin_;
     dimensionedScalar frMax_;
+    Switch writeCurvatureDiagnostics_;
 
-    //- Runtime diagnostic written for post-processing.  GbyNu0() is const,
-    //  therefore the cached field must be mutable.
+    // GbyNu0() is const, therefore cached diagnostics must be mutable.
     mutable volScalarField fr1_;
     mutable volVectorField OmegaRot_;
+    mutable volScalarField curvatureIndicator_;
+    mutable volScalarField productionBase_;
+    mutable volScalarField productionCorrected_;
+    mutable volScalarField productionRatio_;
+    mutable volScalarField fr1Clipped_;
 
     kOmegaSSTCC(const kOmegaSSTCC&) = delete;
     void operator=(const kOmegaSSTCC&) = delete;
+
+    void validateCorrectionCoefficients() const;
+    void updateDiagnosticWriteOptions();
 
 protected:
 

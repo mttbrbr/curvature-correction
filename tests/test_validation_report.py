@@ -16,6 +16,7 @@ from tools.generate_curvature_validation_report import (  # noqa: E402
     DataError,
     analyse,
     classify,
+    classify_neutral,
     main,
     weighted_metrics,
 )
@@ -64,6 +65,28 @@ class MetricTests(unittest.TestCase):
         self.assertEqual(classify(baseline, corrected, converged=True, grid_independent=True, neutral_tolerance=0.02), "improves")
         self.assertEqual(classify(baseline, corrected, converged=False, grid_independent=True, neutral_tolerance=0.02), "non-conclusive")
 
+    def test_neutral_classification_uses_baseline_change(self) -> None:
+        self.assertEqual(
+            classify_neutral(
+                [1.0, 2.0],
+                [1.01, 1.98],
+                converged=True,
+                grid_independent=None,
+                neutral_tolerance=0.02,
+            ),
+            "neutral",
+        )
+        self.assertEqual(
+            classify_neutral(
+                [1.0],
+                [1.03],
+                converged=True,
+                grid_independent=True,
+                neutral_tolerance=0.02,
+            ),
+            "worsens",
+        )
+
     def test_nonfinite_data_rejected(self) -> None:
         with self.assertRaises(DataError):
             weighted_metrics([float("nan")], [1], [1])
@@ -110,6 +133,35 @@ class GeneratorTests(unittest.TestCase):
             output = directory / "out"
             self.assertEqual(main([str(source), "--output-dir", str(output)]), 1)
             self.assertTrue((output / "aggregated-metrics.json").is_file())
+
+    def test_not_verified_only_blocks_strict_acceptance(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            data = minimal_data()
+            data["acceptance_criteria"][0]["status"] = "not-verified"
+            source = directory / "input.json"
+            source.write_text(json.dumps(data))
+            normal_output = directory / "normal"
+            strict_output = directory / "strict"
+            self.assertEqual(
+                main([str(source), "--output-dir", str(normal_output)]),
+                0,
+            )
+            self.assertEqual(
+                main(
+                    [
+                        str(source),
+                        "--output-dir",
+                        str(strict_output),
+                        "--strict-acceptance",
+                    ]
+                ),
+                1,
+            )
+            result = json.loads(
+                (strict_output / "aggregated-metrics.json").read_text()
+            )
+            self.assertEqual(result["critical_incomplete"], ["unit"])
 
 
 if __name__ == "__main__":

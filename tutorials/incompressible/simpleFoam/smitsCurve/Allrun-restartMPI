@@ -12,6 +12,12 @@ initialCase="$resultsDir/_initial"
 nProcs=${CURVATURE_MPI_PROCS:-4}
 startSeconds=$(date +%s)
 
+if ! python3 "$repoDir/tools/fetch_benchmark_data.py" --case smits --verify-only >/dev/null; then
+    echo "ERROR: benchmark inputs are absent or invalid. Run:" >&2
+    echo "  python3 tools/fetch_benchmark_data.py --case smits" >&2
+    exit 2
+fi
+
 if [ "$nProcs" -lt 2 ]; then
     echo "ERROR: CURVATURE_MPI_PROCS must be at least 2" >&2
     exit 1

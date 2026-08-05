@@ -1,0 +1,137 @@
+#!/bin/sh
+set -eu
+
+cd "${0%/*}" || exit 1
+
+: "${WM_PROJECT_DIR:?OpenFOAM environment is not loaded}"
+
+tutorialDir=$(pwd)
+repoDir=$(cd "$tutorialDir/../../../.." && pwd)
+gridLevel=${1:-quick}
+levelDir="$tutorialDir/runs/$gridLevel"
+meshCase="$levelDir/_mesh"
+angles=${NACA_ANGLES:-"0 10 15"}
+startSeconds=$(date +%s)
+
+if ! python3 "$repoDir/tools/fetch_benchmark_data.py" --case naca0012 --verify-only >/dev/null; then
+    echo "ERROR: benchmark inputs are absent or invalid. Run:" >&2
+    echo "  python3 tools/fetch_benchmark_data.py --case naca0012" >&2
+    exit 2
+fi
+
+case "$gridLevel" in
+    quick)
+        grid="$tutorialDir/resources/n0012_113-33.p2dfmt"
+        expectedCells=3584
+        expectedAirfoilFaces=64
+        ;;
+    medium)
+        grid="$tutorialDir/resources/n0012_225-65.p2dfmt"
+        expectedCells=14336
+        expectedAirfoilFaces=128
+        ;;
+    *)
+        echo "ERROR: grid level must be quick or medium" >&2
+        exit 2
+        ;;
+esac
+
+if [ "${CURVATURE_SKIP_BUILD:-0}" != 1 ]; then
+    echo "Building libcurvatureCorrectionModels.so"
+    (cd "$repoDir/src/curvatureCorrectionModels" && wmake libso)
+fi
+
+if [ "${NACA_REUSE_LEVEL:-0}" != 1 ] || [ ! -d "$meshCase/constant/polyMesh" ]; then
+    rm -rf "$levelDir"
+    mkdir -p "$levelDir"
+    echo "Preparing TMR NACA 0012 $gridLevel mesh"
+    cp -a "$tutorialDir/baseCase" "$meshCase"
+    plot3dToFoam -case "$meshCase" -2D 0.01 -noBlank "$grid" \
+        > "$meshCase/log.plot3dToFoam" 2>&1
+    autoPatch -case "$meshCase" -overwrite 20 \
+        > "$meshCase/log.autoPatch" 2>&1
+    createPatch -case "$meshCase" -overwrite \
+        > "$meshCase/log.createPatch" 2>&1
+    checkMesh -case "$meshCase" > "$meshCase/log.checkMesh" 2>&1
+    grep -q "cells: *$expectedCells" "$meshCase/log.checkMesh"
+    grep -q "Number of regions: 1 (OK)" "$meshCase/log.checkMesh"
+    grep -q "Max skewness = .* OK" "$meshCase/log.checkMesh"
+    grep -q "airfoil *$expectedAirfoilFaces" "$meshCase/log.checkMesh"
+    grep -q "Failed 1 mesh checks" "$meshCase/log.checkMesh"
+fi
+
+runCase()
+{
+    angle=$1
+    suffix=$2
+    model=$3
+    caseDir="$levelDir/alpha${angle}-${suffix}"
+
+    ux=$(awk -v a="$angle" 'BEGIN { pi=atan2(0,-1); printf "%.15g", cos(a*pi/180) }')
+    uy=$(awk -v a="$angle" 'BEGIN { pi=atan2(0,-1); printf "%.15g", sin(a*pi/180) }')
+    liftX=$(awk -v value="$uy" 'BEGIN { printf "%.15g", -value }')
+
+    echo "Running alpha=$angle model=$model"
+    rm -rf "$caseDir"
+    cp -a "$tutorialDir/baseCase" "$caseDir"
+    cp -a "$meshCase/constant/polyMesh" "$caseDir/constant/"
+    cp -a "$caseDir/0.orig" "$caseDir/0"
+    seeded=0
+    seedCase="$levelDir/alpha10-$suffix"
+    if [ "$angle" = 15 ] && [ -d "$seedCase" ]; then
+        latestTime=$(foamListTimes -case "$seedCase" -latestTime)
+        for field in U p nuTilda nut
+        do
+            cp "$seedCase/$latestTime/$field" "$caseDir/0/$field"
+        done
+        seeded=1
+        echo "  initialized from alpha=10 model=$model at time=$latestTime"
+    fi
+
+    foamDictionary "$caseDir/constant/turbulenceProperties" \
+        -entry RAS/RASModel -set "$model"
+    if [ "$seeded" = 0 ]; then
+        foamDictionary "$caseDir/0/U" -entry internalField \
+            -set "uniform ($ux $uy 0)"
+    fi
+    for patch in outlet farfield
+    do
+        foamDictionary "$caseDir/0/U" \
+            -entry "boundaryField/$patch/freestreamValue" \
+            -set "uniform ($ux $uy 0)"
+        foamDictionary "$caseDir/0/U" \
+            -entry "boundaryField/$patch/value" \
+            -set "uniform ($ux $uy 0)"
+    done
+    foamDictionary "$caseDir/system/controlDict" \
+        -entry functions/pressure/UInf -set "($ux $uy 0)"
+    foamDictionary "$caseDir/system/controlDict" \
+        -entry functions/forceCoeffs/dragDir -set "($ux $uy 0)"
+    foamDictionary "$caseDir/system/controlDict" \
+        -entry functions/forceCoeffs/liftDir -set "($liftX $ux 0)"
+
+    if [ "${NACA_POTENTIAL_INIT:-0}" = 1 ]; then
+        potentialFoam -case "$caseDir" -writep \
+            > "$caseDir/log.potentialFoam" 2>&1
+    fi
+    simpleFoam -case "$caseDir" > "$caseDir/log.simpleFoam" 2>&1
+    grep -q '^End$' "$caseDir/log.simpleFoam"
+}
+
+for angle in $angles
+do
+    runCase "$angle" sa SpalartAllmaras
+    runCase "$angle" sarc SpalartAllmarasCC
+done
+
+python3 "$tutorialDir/tools/analyse.py" "$tutorialDir" "$gridLevel"
+
+elapsed=$(( $(date +%s) - startSeconds ))
+printf 'TMR NACA 0012 %s time: %d min %d s\n' \
+    "$gridLevel" $((elapsed / 60)) $((elapsed % 60))
+if [ "$elapsed" -gt 3600 ]; then
+    echo "ERROR: TMR NACA 0012 exceeded the 60-minute budget" >&2
+    exit 1
+fi
+
+echo "Results: $levelDir/summary.csv"

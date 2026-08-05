@@ -242,7 +242,6 @@ def main() -> int:
         ("TMBWG SST-RC", read_reference(reference / "smits_cf_cfl3d_sstrc.dat"), "#fb6a4a", False),
         ("TMBWG SA", read_reference(reference / "smits_cf_cfl3d_sa.dat"), "#74c476", False),
         ("TMBWG SA-RC", read_reference(reference / "smits_cf_cfl3d_sarc.dat"), "#bcbddc", False),
-        ("Experiment", read_experiment(reference / "Smits_curvature_expdata_reworked2012.dat"), "#111111", True),
     ]
     write_svg(runs / "cf-comparison.svg", series)
 

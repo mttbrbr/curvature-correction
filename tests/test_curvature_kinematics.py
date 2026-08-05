@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import math
+import re
 from pathlib import Path
 import sys
 import unittest
@@ -236,7 +237,7 @@ class SourceContract(unittest.TestCase):
     def test_sst_denominator_and_clipping_contract(self) -> None:
         self.assertIn("max(sqr(strainRate), 0.09*sqr(omega))", self.source)
         self.assertIn("rotationRate*D2*sqrt(D2)", self.source)
-        self.assertIn("return min(max(fRotation, frMin), frMax);", self.source)
+        self.assertIn("min(max(fRotation, frMin), frMax)", self.source)
 
     def test_sa_denominator_and_unbounded_contract(self) -> None:
         self.assertIn("0.5*(sqr(strainRate) + sqr(rotationRate))", self.source)
@@ -245,8 +246,31 @@ class SourceContract(unittest.TestCase):
 
     def test_material_derivative_contains_time_and_convection(self) -> None:
         self.assertIn("symm(fvc::grad(fvc::ddt(U)))", self.source)
-        self.assertIn('fvc::div(phi, strain, "div(phi,U)")', self.source)
+        self.assertIn(
+            'fvc::div(phi, strain, "div(phi,curvatureStrain)")',
+            self.source,
+        )
         self.assertIn("- strain*fvc::div(phi)", self.source)
+
+    def test_safe_defaults_and_diagnostics_contract(self) -> None:
+        defaults = re.findall(
+            r"[\"]curvatureCorrection[\"][\s\S]{0,100}?\b(false|true)\b",
+            self.model_sources,
+        )
+        self.assertEqual(defaults, ["false", "false"])
+        self.assertEqual(self.model_sources.count("Switch::getOrAddToDict"), 4)
+        self.assertEqual(self.model_sources.count("\"writeCurvatureDiagnostics\""), 4)
+        for field in (
+            "curvatureIndicator_",
+            "productionBase_",
+            "productionCorrected_",
+            "productionRatio_",
+            "fr1Clipped_",
+        ):
+            self.assertGreaterEqual(self.model_sources.count(field), 2)
+        self.assertGreaterEqual(self.model_sources.count("std::isfinite"), 2)
+        self.assertIn("requireFinite(rHat", self.source)
+        self.assertIn("requireFinite(rTilde", self.source)
 
     def test_mrf_source_contract(self) -> None:
         self.assertIn("mesh.csorted<IOMRFZoneList>()", self.source)

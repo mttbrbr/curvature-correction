@@ -31,6 +31,8 @@ foamDictionary "$case_dir/system/controlDict" -entry functions -remove >/dev/nul
 
 cp "$repo_dir/tutorials/incompressible/simpleFoam/curvedChannel/constant/turbulenceProperties" \
     "$case_dir/constant/turbulenceProperties"
+foamDictionary "$case_dir/constant/turbulenceProperties" \
+    -entry RAS/kOmegaSSTCCCoeffs/writeCurvatureDiagnostics -set on >/dev/null
 cp "$repo_dir/tutorials/incompressible/simpleFoam/curvedChannel/0.orig/k" "$case_dir/0/k"
 cp "$repo_dir/tutorials/incompressible/simpleFoam/curvedChannel/0.orig/omega" "$case_dir/0/omega"
 cp "$repo_dir/tutorials/incompressible/simpleFoam/curvedChannel/0.orig/nut" "$case_dir/0/nut"
@@ -73,16 +75,53 @@ mpirun -np "$mpi_procs" simpleFoam -case "$case_dir" -parallel \
     > "$case_dir/log.simpleFoam-mpi" 2>&1
 reconstructPar -case "$case_dir" -latestTime > "$case_dir/log.reconstructPar" 2>&1
 
-postProcess -case "$case_dir" -latestTime -func 'fieldMinMax(OmegaRot)' \
+postProcess -case "$case_dir" -latestTime -func "fieldMinMax(OmegaRot)" \
     > "$case_dir/log.OmegaRot" 2>&1
 
-grep -q 'min(mag(OmegaRot)) = 100' "$case_dir/log.OmegaRot"
-grep -q 'max(mag(OmegaRot)) = 100' "$case_dir/log.OmegaRot"
-if grep -Eiq '(^|[^[:alpha:]])(nan|inf)([^[:alpha:]]|$)' \
+grep -q "min(mag(OmegaRot)) = 100" "$case_dir/log.OmegaRot"
+grep -q "max(mag(OmegaRot)) = 100" "$case_dir/log.OmegaRot"
+
+diagnostic_fields="curvatureIndicator productionBase productionCorrected productionRatio fr1Clipped"
+for field in $diagnostic_fields; do
+    test -s "$case_dir/3/$field"
+done
+if grep -Eiq "(^|[^[:alpha:]])(nan|inf)([^[:alpha:]]|$)" \
     "$case_dir/log.simpleFoam" "$case_dir/log.simpleFoam-mpi" \
-    "$case_dir/3/fr1" "$case_dir/3/OmegaRot"; then
-    echo "ERROR: non-finite value found in MRF smoke test" >&2
+    "$case_dir/3/fr1" "$case_dir/3/OmegaRot" \
+    $(for field in $diagnostic_fields; do printf "%s " "$case_dir/3/$field"; done); then
+    echo "ERROR: non-finite value found in SST MRF diagnostics" >&2
     exit 1
 fi
 
-echo "MRF smoke test passed in serial and MPI restart: OmegaRot=100 rad/s"
+echo "Restarting the same MRF case with SpalartAllmarasCC"
+cp "$case_dir/3/k" "$case_dir/3/nuTilda"
+foamDictionary "$case_dir/3/nuTilda" -entry FoamFile/object -set nuTilda >/dev/null
+foamDictionary "$case_dir/3/nuTilda" -entry dimensions -set "[0 2 -1 0 0 0 0]" >/dev/null
+foamDictionary "$case_dir/3/nuTilda" -entry boundaryField/innerWall \
+    -set "{ type fixedValue; value uniform 0; }" >/dev/null
+foamDictionary "$case_dir/3/nuTilda" -entry boundaryField/outerWall \
+    -set "{ type fixedValue; value uniform 0; }" >/dev/null
+foamDictionary "$case_dir/constant/turbulenceProperties" \
+    -entry RAS/RASModel -set SpalartAllmarasCC >/dev/null
+foamDictionary "$case_dir/constant/turbulenceProperties" \
+    -entry RAS/SpalartAllmarasCCCoeffs \
+    -set "{ curvatureCorrection on; writeCurvatureDiagnostics on; Cr1 1; Cr2 12; Cr3 1; }" >/dev/null
+foamDictionary "$case_dir/system/fvSchemes" \
+    -entry "divSchemes/div(phi,nuTilda)" -set "Gauss upwind" >/dev/null
+foamDictionary "$case_dir/system/fvSolution" -entry solvers/nuTilda \
+    -set "{ solver smoothSolver; smoother GaussSeidel; tolerance 1e-7; relTol 0.1; }" >/dev/null
+foamDictionary "$case_dir/system/fvSolution" \
+    -entry relaxationFactors/equations/nuTilda -set 0.7 >/dev/null
+foamDictionary "$case_dir/system/controlDict" -entry endTime -set 4 >/dev/null
+simpleFoam -case "$case_dir" > "$case_dir/log.simpleFoam-sa" 2>&1
+for field in fr1 OmegaRot $diagnostic_fields; do
+    test -s "$case_dir/4/$field"
+done
+if grep -Eiq "(^|[^[:alpha:]])(nan|inf)([^[:alpha:]]|$)" \
+    "$case_dir/log.simpleFoam-sa" "$case_dir/4/fr1" "$case_dir/4/OmegaRot" \
+    $(for field in $diagnostic_fields; do printf "%s " "$case_dir/4/$field"; done); then
+    echo "ERROR: non-finite value found in SA MRF diagnostics" >&2
+    exit 1
+fi
+
+echo "MRF smoke test passed for SST serial/MPI and SA serial diagnostics: OmegaRot=100 rad/s"

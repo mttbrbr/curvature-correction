@@ -10,8 +10,14 @@ Three automated workflows cover quick validation, restart/MPI consistency, and
 grid sensitivity. All use OpenFOAM.com v2412 and keep their generated data under
 `runs/`.
 
-Run the complete suite with `./Allrun-extended`. It builds once, executes all
-three workflows in about 20 minutes, and enforces a 30-minute total budget.
+Fetch the pinned CC0 quick-grid/reference inputs once from the repository root:
+
+```bash
+python3 tools/fetch_benchmark_data.py --case smits
+```
+
+`Allrun` and `Allrun-restartMPI` fail early with this exact instruction if the
+cache is absent or a checksum differs.
 
 ## Quick six-case validation
 
@@ -71,7 +77,12 @@ L-infinity tolerance of 5e-4. The test takes about 40 seconds and writes
 
 Run:
 
+The medium/fine NASA archive files are on redistribution hold. Supply lawfully
+obtained PLOT3D files explicitly (plain or gzip-compressed):
+
 ```bash
+SMITS_MEDIUM_GRID=/path/to/257x97.p2dfmt.gz \
+SMITS_FINE_GRID=/path/to/513x193.p2dfmt.gz \
 ./Allrun-gridStudy
 ```
 
@@ -152,6 +163,7 @@ reference solutions:
 - <https://tmbwg.github.io/turbmodels/smitscurve_grids.html>
 - <https://github.com/TMBWG/turbmodels>
 
-The files retained under `resources/` make the workflows self-contained. Their
-origin and hashes are recorded in `resources/README.md` and
-`resources/SHA256SUMS`. Run `./Allclean` to remove all generated results.
+No benchmark bytes are versioned under `resources/`. Immutable URLs, upstream
+paths, licences, and SHA-256 digests are recorded in
+`data/benchmark-sources.json`; `resources/README.md` documents materialisation.
+The held experimental series is not plotted. Run `./Allclean` to remove results.

@@ -12,6 +12,12 @@ meshCase="$resultsDir/_mesh"
 grid="$tutorialDir/resources/smits_3levdn_129x49.p2dfmt"
 startSeconds=$(date +%s)
 
+if ! python3 "$repoDir/tools/fetch_benchmark_data.py" --case smits --verify-only >/dev/null; then
+    echo "ERROR: benchmark inputs are absent or invalid. Run:" >&2
+    echo "  python3 tools/fetch_benchmark_data.py --case smits" >&2
+    exit 2
+fi
+
 rm -rf "$resultsDir"
 mkdir -p "$resultsDir"
 

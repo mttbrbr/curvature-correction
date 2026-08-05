@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "policy": "External benchmark inputs are downloaded on demand and are never tracked in this repository.",
+  "tmr_revision": "ddf1840b6e928d1de60d920cafe431ed476f36a1",
+  "tmr_license": "https://github.com/TMBWG/turbmodels/blob/ddf1840b6e928d1de60d920cafe431ed476f36a1/LICENSE",
+  "assets": [
+    {
+      "case": "flatplate",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/flatplate_137x97.nmf",
+      "sha256": "4e2d2e8d5a0076754c06a310f6b7790096a59d5c02319452f81234865f13887d",
+      "status": "downloadable",
+      "upstream_path": "FlatPlate/Grids/flatplate_clust2_2levelsdown_137x97.nmf",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/FlatPlate/Grids/flatplate_clust2_2levelsdown_137x97.nmf"
+    },
+    {
+      "case": "flatplate",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/flatplate_137x97.p2dfmt",
+      "sha256": "55ae965f2151e5644e3c7c1b6fecea7ce0a16cf4c34eae6997f27683a4e2ac44",
+      "status": "downloadable",
+      "upstream_path": "FlatPlate/Grids/flatplate_clust2_2levelsdown_137x97.p2dfmt",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/FlatPlate/Grids/flatplate_clust2_2levelsdown_137x97.p2dfmt"
+    },
+    {
+      "case": "flatplate",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/flatplate_69x49.nmf",
+      "sha256": "9117aaa4a80c97aa0be8a558db4c3582b7ec89d0b0214c61158ce51fad248a64",
+      "status": "downloadable",
+      "upstream_path": "FlatPlate/Grids/flatplate_clust2_3levelsdown_69x49.nmf",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/FlatPlate/Grids/flatplate_clust2_3levelsdown_69x49.nmf"
+    },
+    {
+      "case": "flatplate",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/flatplate_69x49.p2dfmt",
+      "sha256": "18c1d1c82cf91bdad89b2c2963129fc992fcd8b98fda4b3e79b7397ee52ba223",
+      "status": "downloadable",
+      "upstream_path": "FlatPlate/Grids/flatplate_clust2_3levelsdown_69x49.p2dfmt",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/FlatPlate/Grids/flatplate_clust2_3levelsdown_69x49.p2dfmt"
+    },
+    {
+      "case": "flatplate",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/reference/cf_K-S.dat",
+      "sha256": "bafbaf7fa7969a945a5ad0935ca90c320ab72f14ba5a08474abffa61356bba2d",
+      "status": "downloadable",
+      "upstream_path": "FlatPlate_validation/cf_K-S.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/FlatPlate_validation/cf_K-S.dat"
+    },
+    {
+      "case": "flatplate",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/reference/sa-cf-cfl3d.dat",
+      "sha256": "e089c0ada436ab74308b20b3e7913a0ced691de85ccef83c3a5961f9f7f35c19",
+      "status": "downloadable",
+      "upstream_path": "FlatPlate_validation/sa-cf_cfl3d.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/FlatPlate_validation/sa-cf_cfl3d.dat"
+    },
+    {
+      "case": "flatplate",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/reference/sst-cf-cfl3d.dat",
+      "sha256": "d694caf86c8886ad40016f63e76f738e2c8caa982437ba2a1074d5d58efc2109",
+      "status": "downloadable",
+      "upstream_path": "FlatPlate_validation/sst-cf_cfl3d.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/FlatPlate_validation/sst-cf_cfl3d.dat"
+    },
+    {
+      "case": "flatplate",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/reference/coles-upyp.dat",
+      "sha256": "314dc0b5e4aa666ee88ac507eeda8cbeaacc1279057d10430748231264277bcb",
+      "status": "downloadable",
+      "upstream_path": "FlatPlate_validation/u+y+.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/FlatPlate_validation/u+y+.dat"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/n0012_113-33.nmf",
+      "sha256": "597865103baf72a0c78d0e42a7e2d09688ea78b6a20f8fbcac2baa936d1445a1",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_grids/n0012_113-33.nmf",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_grids/n0012_113-33.nmf"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/n0012_113-33.p2dfmt",
+      "sha256": "669fff259b59ac4df557ad3bfef6be0794ac5eacc0f45ec1ce9715f75dfd1654",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_grids/n0012_113-33.p2dfmt",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_grids/n0012_113-33.p2dfmt"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/n0012_225-65.nmf",
+      "sha256": "c6c32668f19bbd1a89510dfeb3a43c924137ae90afa7772eeb83875f9d9b34b0",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_grids/n0012_225-65.nmf",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_grids/n0012_225-65.nmf"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/n0012_225-65.p2dfmt",
+      "sha256": "66817d6bbc9353cb0ca9867f958da1bcce6485f7d68ec7038362a341bdb0fa8c",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_grids/n0012_225-65.p2dfmt",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_grids/n0012_225-65.p2dfmt"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/reference/n0012cf-cfl3d-sa.dat",
+      "sha256": "e7372151e535d3f89c2eb8b8260a1e69e6b6681bb33aacdd677967ad5403ba5e",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_validation/n0012cf_cfl3d_sa.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_validation/n0012cf_cfl3d_sa.dat"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/reference/n0012cf-cfl3d-sarc.dat",
+      "sha256": "1bb536787a350fe64d43691b100e9b3e18e42b55ee5f0eba013843121356dbee",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_validation/n0012cf_cfl3d_sarc.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_validation/n0012cf_cfl3d_sarc.dat"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/reference/n0012clcd-cfl3d-sa.dat",
+      "sha256": "b07afec6ce3ae4bf2f2d1a1d53785fde0a5ca68481a0d4186aa92754d811944e",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_validation/n0012clcd_cfl3d_sa.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_validation/n0012clcd_cfl3d_sa.dat"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/reference/n0012clcd-cfl3d-sarc.dat",
+      "sha256": "ae39bb28975622bd9509f9859d336b0985811193135be0fc1b4764a3ba37995f",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_validation/n0012clcd_cfl3d_sarc.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_validation/n0012clcd_cfl3d_sarc.dat"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/reference/n0012cp-cfl3d-sa.dat",
+      "sha256": "2f1231eba6a7da0e988a6954ac34f2f420ff59a5e24fca331110f980cd881dd2",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_validation/n0012cp_cfl3d_sa.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_validation/n0012cp_cfl3d_sa.dat"
+    },
+    {
+      "case": "naca0012",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrNaca0012/resources/reference/n0012cp-cfl3d-sarc.dat",
+      "sha256": "3d10dd31685a073c53a1c8bf5dc67ba4105abb0047dff593fafef5ec2814dc70",
+      "status": "downloadable",
+      "upstream_path": "NACA0012_validation/n0012cp_cfl3d_sarc.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/NACA0012_validation/n0012cp_cfl3d_sarc.dat"
+    },
+    {
+      "case": "smits",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/smitsCurve/resources/smits_3levdn_129x49.nmf",
+      "sha256": "faad76c3a54d9767442998929ad27504defc07fcffad955f41e0988003120a0c",
+      "status": "downloadable",
+      "upstream_path": "Smitscurve_grids/smits_3levdn_129x49.nmf",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Smitscurve_grids/smits_3levdn_129x49.nmf"
+    },
+    {
+      "case": "smits",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/smitsCurve/resources/smits_3levdn_129x49.p2dfmt",
+      "sha256": "4ff3d8d1672ee861fe438ed153e8d933c3497316700482aa8eb13d114f81b78a",
+      "status": "downloadable",
+      "upstream_path": "Smitscurve_grids/smits_3levdn_129x49.p2dfmt",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Smitscurve_grids/smits_3levdn_129x49.p2dfmt"
+    },
+    {
+      "case": "smits",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/smitsCurve/resources/reference/smits_cf_cfl3d_sa.dat",
+      "sha256": "e4ed641b2adbd0e4bc85dd54e6357e87d5ae815e3828c83f0f5a2ddaaaa0bbe4",
+      "status": "downloadable",
+      "upstream_path": "Smitscurve_validation/smits_cf_cfl3d_sa.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Smitscurve_validation/smits_cf_cfl3d_sa.dat"
+    },
+    {
+      "case": "smits",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/smitsCurve/resources/reference/smits_cf_cfl3d_sarc.dat",
+      "sha256": "573faa7378ab07d68b2a060108ed961e1b2d6d7dceb969bf9bd98f9d58b53e0b",
+      "status": "downloadable",
+      "upstream_path": "Smitscurve_validation/smits_cf_cfl3d_sarc.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Smitscurve_validation/smits_cf_cfl3d_sarc.dat"
+    },
+    {
+      "case": "smits",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/smitsCurve/resources/reference/smits_cf_cfl3d_sst.dat",
+      "sha256": "1960959331aba62a8b944da83a389b2679a7f20172a0209377440f89eb3adb1f",
+      "status": "downloadable",
+      "upstream_path": "Smitscurve_validation/smits_cf_cfl3d_sst.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Smitscurve_validation/smits_cf_cfl3d_sst.dat"
+    },
+    {
+      "case": "smits",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/smitsCurve/resources/reference/smits_cf_cfl3d_sstrc.dat",
+      "sha256": "14e9ce5ee5029283d5c1df6660c6a7d866d6e15f8f466835bc06822be2c16f5a",
+      "status": "downloadable",
+      "upstream_path": "Smitscurve_validation/smits_cf_cfl3d_sstrc.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Smitscurve_validation/smits_cf_cfl3d_sstrc.dat"
+    },
+    {
+      "case": "smits-held",
+      "license": "third-party-experimental-rights-unverified",
+      "reason": "The TMBWG CC0 affirmer may not own all rights in the underlying experiment.",
+      "source_url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Bradshaw/d1/Smits_curvature_expdata_reworked2012.dat",
+      "status": "hold",
+      "upstream_path": "Bradshaw/d1/Smits_curvature_expdata_reworked2012.dat"
+    },
+    {
+      "case": "smits-held",
+      "license": "unverified-file-level-rights",
+      "reason": "The official archive has no explicit file-level redistribution licence.",
+      "source_url": "https://www.nasa.gov/wp-content/uploads/2026/02/smitscurve-grids.zip",
+      "status": "hold",
+      "upstream_path": "medium/fine Smits PLOT3D grids"
+    }
+  ]
+}

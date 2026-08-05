@@ -17,6 +17,7 @@ divSchemes
 {
     default none;
     div(phi,U) Gauss upwind;
+    div(phi,curvatureStrain) Gauss linear;
     div(phi,k) Gauss upwind;
     div(phi,omega) Gauss upwind;
     div((nuEff*dev2(T(grad(U))))) Gauss linear;
