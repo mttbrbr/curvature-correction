@@ -7,3 +7,4 @@
 // Instantiate and register kOmegaSSTCC in the incompressible RAS selection
 // table used by simpleFoam and other incompressible solvers.
 makeRASModel(kOmegaSSTCC);
+makeRASModel(kOmegaSST2003RC);

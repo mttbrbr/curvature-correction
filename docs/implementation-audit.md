@@ -111,7 +111,8 @@ is simply `fr1` unless the user opts into `ft2`.
 
 | Model | Entry | Default | Dimension | Validation |
 | --- | --- | ---: | --- | --- |
-| both | `curvatureCorrection` | `false` | switch | parsed by OpenFOAM; explicit opt-in |
+| explicit RC names | `curvatureCorrection` | `true` | switch | correction active by default |
+| legacy aliases | `curvatureCorrection` | `false` | switch | deprecated opt-in behavior through 1.x |
 | SST | `Cr1` | 1.0 | dimensionless | finite check |
 | SST | `Cr2` | 2.0 | dimensionless | finite check |
 | SST | `Cr3` | 1.0 | dimensionless | finite check |
@@ -184,8 +185,9 @@ relative-gradient representation and OpenFOAM absolute-velocity representation.
 A standalone runtime matrix verifies no-MRF behaviour, inactive and multiple
 disjoint zones, opposite angular velocities, time-varying `Function1` omega,
 boundary consistency, serial/MPI operation, and fatal rejection of overlaps
-and duplicate registered lists. A solver MRF smoke test additionally verifies
-finite execution, diagnostic output and a two-rank restart. Physical
+and duplicate registered lists. A solver MRF smoke test was also run during
+development to verify finite execution, diagnostic output and a two-rank
+restart; that tutorial-dependent smoke case is not distributed. Physical
 rotating-channel validation remains outstanding.
 
 ## Literature comparison and disposition
@@ -209,4 +211,9 @@ Primary references:
 - <https://doi.org/10.2514/2.1058>
 - <https://doi.org/10.1115/1.3070573>
 
-The implementation is formula-consistent within its stated inertial and OpenFOAM.com v2412 MRF scope, but the audit alone cannot support merge readiness. Neutral-flow regression now passes on two TMR 2DZP grids. Physical rotating-flow support, independent concave/rotating benchmarks, and broader validation remain separate acceptance gates.
+The implementation is formula-consistent in its inertial scope. OpenFOAM.com
+v2412 MRF mapping is verified algebraically but remains experimental. The audit
+alone cannot establish predictive accuracy. Historical development runs passed
+the neutral-flow regression on two TMR 2DZP grids; the runnable tutorial cases
+are not distributed. Inertial wingtip-vortex and concave-curvature campaigns
+remain the physical v1.0 acceptance gates.

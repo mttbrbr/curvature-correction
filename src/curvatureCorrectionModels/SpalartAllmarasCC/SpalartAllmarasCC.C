@@ -81,7 +81,9 @@ SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
     (
         Switch::getOrAddToDict
         (
-            "curvatureCorrection", this->coeffDict_, false
+            "curvatureCorrection",
+            this->coeffDict_,
+            type == word("SpalartAllmarasNoFt2RC")
         )
     ),
     Cr1_
@@ -114,6 +116,7 @@ SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
             false
         )
     ),
+    noFt2Variant_(type == word("SpalartAllmarasNoFt2RC")),
     fr1_
     (
         IOobject
@@ -206,13 +209,33 @@ SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
         dimensionedScalar(dimless, scalar(0))
     )
 {
-    validateCorrectionCoefficients();
-    updateDiagnosticWriteOptions();
-
     if (type == typeName)
     {
-        this->printCoeffs(type);
+        static bool warned = false;
+        if (!warned)
+        {
+            WarningInFunction
+                << "Runtime model " << typeName << " is deprecated; use "
+                << "SpalartAllmarasNoFt2RC. The legacy name will remain "
+                << "available through the 1.x release series." << nl;
+            warned = true;
+        }
     }
+
+    if
+    (
+        noFt2Variant_
+     && this->coeffDict_.lookupOrDefault<Switch>("ft2", false)
+    )
+    {
+        FatalIOErrorInFunction(this->coeffDict_)
+            << "SpalartAllmarasNoFt2RC requires ft2 false"
+            << exit(FatalIOError);
+    }
+
+    validateCorrectionCoefficients();
+    updateDiagnosticWriteOptions();
+    this->printCoeffs(type);
 }
 
 template<class BasicTurbulenceModel>
@@ -235,6 +258,16 @@ bool SpalartAllmarasCC<BasicTurbulenceModel>::read()
         "writeCurvatureDiagnostics",
         this->coeffDict()
     );
+    if
+    (
+        noFt2Variant_
+     && this->coeffDict().lookupOrDefault<Switch>("ft2", false)
+    )
+    {
+        FatalIOErrorInFunction(this->coeffDict())
+            << "SpalartAllmarasNoFt2RC requires ft2 false"
+            << exit(FatalIOError);
+    }
     validateCorrectionCoefficients();
     updateDiagnosticWriteOptions();
     return true;
@@ -259,7 +292,11 @@ void SpalartAllmarasCC<BasicTurbulenceModel>::correct()
 
     const volScalarField chi(this->chi());
     const volScalarField fv1(this->fv1(chi));
-    const volScalarField ft2(this->ft2(chi));
+    volScalarField ft2(this->ft2(chi));
+    if (noFt2Variant_)
+    {
+        ft2 = scalar(0);
+    }
 
     const tmp<volTensorField> tgradU(fvc::grad(U));
     const volScalarField dTilda(this->dTilda(chi, fv1, tgradU()));

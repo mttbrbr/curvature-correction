@@ -37,8 +37,8 @@ repository or dataset, rather than NASA hosting alone, is the acceptance gate.
 
 ## Completed TMR 2DZP result
 
-The repository provides a `tmrFlatPlate` tutorial and a pinned manifest for
-the two smallest nested TMR grids and computational reference curves. Inputs
+The private validation archive retains the former `tmrFlatPlate` case and a
+pinned manifest for the two smallest nested TMR grids and computational reference curves. Inputs
 are fetched on demand under CC0-1.0 and verified with SHA-256. Six native/on/off cases were run on both grids. Correction-off
 fields are identical to their parents. The largest correction-on `Cf` deviation
 across the two grids is 0.773% for SST-RC and 0.459% for SA-RC, below the 1%
@@ -52,7 +52,7 @@ accuracy improvement or formal three-grid independence.
 
 ## Completed TMR NACA 0012 result
 
-The repository provides a tutorial and pinned download manifest for two nested
+The private validation archive retains a case and pinned download manifest for two nested
 TMR grids and CC0 CFL3D SA/SA-RC force, pressure and skin-friction curves. On 225x65 at 10 degrees, OpenFOAM SA-RC
 moves CL from 1.06195 to 1.06707 toward 1.09474 and CD from 0.012981 to
 0.011972 toward 0.011794. The SA-RC errors contract from 8.39%/34.45% on the

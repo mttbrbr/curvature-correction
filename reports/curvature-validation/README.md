@@ -1,9 +1,11 @@
 # Generated validation reports
 
-Reports, metrics, and plots are generated locally or in CI and are not committed.
-This avoids silently relicensing embedded external reference series. Use
-`tools/generate_curvature_validation_report.py --strict-acceptance` for a release
-gate: critical checks that are failed or not verified make the command fail.
+Reviewed validation evidence is stored under one immutable campaign directory
+per run. Schema v2 records provenance and computes acceptance states from
+observations and preregistered thresholds. Failed or unverified critical checks
+make `--strict-acceptance` fail.
 
-Generated report directories should be published as CI artifacts together with
-the manifest revision and workflow run identifier.
+Raw third-party reference profiles are not committed. Each accepted campaign
+contains Markdown, HTML, aggregate JSON, permitted plots, and a copy plus
+SHA-256 of the private archive manifest. The private workflow opens a pull
+request; it never pushes evidence directly to `main`.

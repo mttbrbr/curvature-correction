@@ -1,0 +1,47 @@
+name: private physical validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      campaign_id:
+        description: Immutable campaign identifier
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate:
+    runs-on: [self-hosted, linux, openfoam-v2412, curvature-validation]
+    environment: validation
+    timeout-minutes: 720
+    env:
+      CURVATURE_VALIDATION_ARCHIVE: ${{ vars.CURVATURE_VALIDATION_ARCHIVE }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate archive and run campaign
+        id: validation
+        continue-on-error: true
+        run: tools/run_private_validation.sh "${{ inputs.campaign_id }}"
+      - name: Open evidence pull request
+        if: always() && steps.validation.outcome != 'cancelled'
+        run: |
+          branch="validation/${{ inputs.campaign_id }}"
+          git switch -c "$branch"
+          git add "reports/curvature-validation/${{ inputs.campaign_id }}"
+          git diff --cached --quiet && { echo "No report changes"; exit 2; }
+          git config user.name "curvature-validation-bot"
+          git config user.email "curvature-validation-bot@users.noreply.github.com"
+          git commit -m "Add validation campaign ${{ inputs.campaign_id }}"
+          git push --set-upstream origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Validation campaign ${{ inputs.campaign_id }}" \
+            --body "Automated physical-validation evidence. Review provenance, computed gates, and licensing before merge."
+      - name: Enforce validation result
+        if: steps.validation.outcome == 'failure'
+        run: exit 1

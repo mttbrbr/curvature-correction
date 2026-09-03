@@ -85,6 +85,40 @@ public:
     virtual bool read() override;
 };
 
+
+//- Scientifically explicit runtime name for the OpenFOAM v2412 SST parent.
+template<class BasicTurbulenceModel>
+class kOmegaSST2003RC
+:
+    public kOmegaSSTCC<BasicTurbulenceModel>
+{
+public:
+    typedef typename BasicTurbulenceModel::alphaField alphaField;
+    typedef typename BasicTurbulenceModel::rhoField rhoField;
+    typedef typename BasicTurbulenceModel::transportModel transportModel;
+
+    TypeName("kOmegaSST2003RC");
+
+    kOmegaSST2003RC
+    (
+        const alphaField& alpha,
+        const rhoField& rho,
+        const volVectorField& U,
+        const surfaceScalarField& alphaRhoPhi,
+        const surfaceScalarField& phi,
+        const transportModel& transport,
+        const word& propertiesName = turbulenceModel::propertiesName,
+        const word& type = typeName
+    )
+    :
+        kOmegaSSTCC<BasicTurbulenceModel>
+        (
+            alpha, rho, U, alphaRhoPhi, phi, transport,
+            propertiesName, type
+        )
+    {}
+};
+
 } // End namespace RASModels
 } // End namespace Foam
 

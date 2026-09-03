@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Independent scalar/tensor oracle for the implemented RC algebra.
 
 The module intentionally uses only the Python standard library.  Tensor
@@ -226,4 +227,3 @@ def rotate_tensor(value: Sequence[Sequence[float]], transform: Sequence[Sequence
     """Apply ``Q A Q^T`` for an orthogonal change of Cartesian basis."""
     q = tensor(transform)
     return matmul(matmul(q, tensor(value)), transpose(q))
-

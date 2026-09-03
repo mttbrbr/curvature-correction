@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Deterministic verification of the implemented SA-RC and SST-RC algebra."""
 
 from __future__ import annotations
 
 import math
-import re
 from pathlib import Path
 import sys
 import unittest
@@ -233,6 +233,13 @@ class SourceContract(unittest.TestCase):
                 "SpalartAllmarasCC/SpalartAllmarasCC.C",
             )
         )
+        cls.model_headers = "\n".join(
+            (source_root / path).read_text()
+            for path in (
+                "kOmegaSSTCC/kOmegaSSTCC.H",
+                "SpalartAllmarasCC/SpalartAllmarasCC.H",
+            )
+        )
 
     def test_sst_denominator_and_clipping_contract(self) -> None:
         self.assertIn("max(sqr(strainRate), 0.09*sqr(omega))", self.source)
@@ -253,11 +260,16 @@ class SourceContract(unittest.TestCase):
         self.assertIn("- strain*fvc::div(phi)", self.source)
 
     def test_safe_defaults_and_diagnostics_contract(self) -> None:
-        defaults = re.findall(
-            r"[\"]curvatureCorrection[\"][\s\S]{0,100}?\b(false|true)\b",
-            self.model_sources,
+        self.assertIn('type == word("kOmegaSST2003RC")', self.model_sources)
+        self.assertIn(
+            'type == word("SpalartAllmarasNoFt2RC")', self.model_sources
         )
-        self.assertEqual(defaults, ["false", "false"])
+        self.assertIn('TypeName("kOmegaSST2003RC")', self.model_headers)
+        self.assertIn('TypeName("SpalartAllmarasNoFt2RC")', self.model_headers)
+        self.assertIn("makeRASModel(kOmegaSST2003RC)", (ROOT / "src/curvatureCorrectionModels/kOmegaSSTCC/makekOmegaSSTCC.C").read_text())
+        self.assertIn("makeRASModel(SpalartAllmarasNoFt2RC)", (ROOT / "src/curvatureCorrectionModels/SpalartAllmarasCC/makeSpalartAllmarasCC.C").read_text())
+        self.assertIn("ft2 = scalar(0)", self.model_sources)
+        self.assertIn("requires ft2 false", self.model_sources)
         self.assertEqual(self.model_sources.count("Switch::getOrAddToDict"), 4)
         self.assertEqual(self.model_sources.count("\"writeCurvatureDiagnostics\""), 4)
         for field in (
