@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
 set -eu
 
 : "${WM_PROJECT_DIR:?source OpenFOAM.com v2412 before running this test}"

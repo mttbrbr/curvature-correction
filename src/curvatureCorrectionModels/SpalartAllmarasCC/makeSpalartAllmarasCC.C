@@ -5,3 +5,4 @@
 #include "SpalartAllmarasCC.H"
 
 makeRASModel(SpalartAllmarasCC);
+makeRASModel(SpalartAllmarasNoFt2RC);

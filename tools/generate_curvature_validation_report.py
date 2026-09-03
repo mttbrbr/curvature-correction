@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Validate curvature V&V data and generate Markdown, HTML and JSON reports.
 
 The input is a versioned JSON document.  Profile/scalar datasets may contain
@@ -16,12 +17,14 @@ from html import escape
 import json
 import math
 from pathlib import Path
+import re
 import sys
 from typing import Any, Iterable
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 EPS = 1.0e-30
 VALID_CLASSIFICATIONS = {"improves", "neutral", "worsens", "non-conclusive"}
+VALID_OPERATORS = {"le", "ge"}
 
 
 class DataError(ValueError):
@@ -47,6 +50,26 @@ def finite_number(value: Any, label: str) -> float:
     if not math.isfinite(result):
         raise DataError(f"{label} contains NaN or infinity")
     return result
+
+
+def evaluate_criterion(criterion: dict[str, Any]) -> str:
+    """Compute a criterion status from its declared observation and threshold."""
+    if "status" in criterion:
+        raise DataError("acceptance criterion status is computed and must not be supplied")
+    if bool(criterion.get("not_applicable", False)):
+        return "not-applicable"
+    if criterion.get("observed") is None:
+        return "not-verified"
+    operator = str(required(criterion, "operator", "acceptance criterion"))
+    if operator not in VALID_OPERATORS:
+        raise DataError(f"invalid acceptance operator {operator}")
+    observed = finite_number(criterion["observed"], "acceptance criterion.observed")
+    threshold = finite_number(
+        required(criterion, "threshold", "acceptance criterion"),
+        "acceptance criterion.threshold",
+    )
+    passed = observed <= threshold if operator == "le" else observed >= threshold
+    return "pass" if passed else "fail"
 
 
 def weighted_metrics(model: Iterable[float], reference: Iterable[float], weights: Iterable[float]) -> Metrics:
@@ -208,6 +231,14 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
         raise DataError("metadata and implementation must be objects")
     if not isinstance(benchmarks, list) or not isinstance(criteria, list):
         raise DataError("benchmarks and acceptance_criteria must be arrays")
+    for key in (
+        "campaign_id",
+        "commit",
+        "openfoam_version",
+        "compiler",
+        "archive_manifest_sha256",
+    ):
+        required(metadata, key, "metadata")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     plots_dir = output_dir / "plots"
@@ -223,6 +254,13 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
         benchmark_id = str(required(benchmark, "id", "benchmark"))
         required(benchmark, "name", f"benchmark {benchmark_id}")
         required(benchmark, "category", f"benchmark {benchmark_id}")
+        required(benchmark, "case_revision", f"benchmark {benchmark_id}")
+        digest = str(required(benchmark, "input_sha256", f"benchmark {benchmark_id}"))
+        if not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise DataError(f"benchmark {benchmark_id}.input_sha256 must be SHA-256")
+        meshes = required(benchmark, "meshes", f"benchmark {benchmark_id}")
+        if not isinstance(meshes, list) or len(meshes) < 3:
+            raise DataError(f"benchmark {benchmark_id}.meshes must contain at least three meshes")
         converged = bool(required(benchmark, "converged", f"benchmark {benchmark_id}"))
         if not converged:
             non_converged.append(benchmark_id)
@@ -238,6 +276,13 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
             has_reference = "reference" in series
             if not has_reference:
                 missing_reference.append(f"{benchmark_id}/{dataset_id}")
+            publication = str(dataset.get("reference_publication", "aggregate-only"))
+            if publication not in {"open", "aggregate-only"}:
+                raise DataError(
+                    f"dataset {dataset_id}.reference_publication must be open or aggregate-only"
+                )
+            if has_reference:
+                required(dataset, "reference_citation", f"dataset {dataset_id}")
             base_metrics = weighted_metrics(series["baseline"], series["reference"], series["weight"]) if has_reference else None
             corrected_metrics = weighted_metrics(series["corrected"], series["reference"], series["weight"]) if has_reference else None
             if dataset.get("expected_behavior") == "neutral":
@@ -263,7 +308,7 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
                 (str(dataset.get("baseline_label", "baseline")), series["baseline"], "#2864b7"),
                 (str(dataset.get("corrected_label", "corrected")), series["corrected"], "#c53d36"),
             ]
-            if has_reference:
+            if has_reference and publication == "open":
                 plot_series.append((str(dataset.get("reference_label", "reference")), series["reference"], "#222222"))
             svg_plot(plots_dir / plot_name, str(dataset.get("quantity", dataset_id)), series["x"], plot_series)
             analysed_sets.append(
@@ -279,6 +324,8 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
                     ],
                     "plot": f"plots/{plot_name}",
                     "weighting": str(dataset.get("weighting", "uniform point weights")),
+                    "reference_citation": dataset.get("reference_citation"),
+                    "reference_publication": publication,
                 }
             )
         item = dict(benchmark)
@@ -287,12 +334,14 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
 
     critical_failures = []
     critical_incomplete = []
+    analysed_criteria = []
     for criterion in criteria:
         if not isinstance(criterion, dict):
             raise DataError("each acceptance criterion must be an object")
-        status = str(required(criterion, "status", "acceptance criterion"))
-        if status not in {"pass", "fail", "not-verified", "not-applicable"}:
-            raise DataError(f"invalid acceptance status {status}")
+        status = evaluate_criterion(criterion)
+        analysed = dict(criterion)
+        analysed["status"] = status
+        analysed_criteria.append(analysed)
         if bool(criterion.get("critical", False)):
             identifier = str(
                 criterion.get("id", criterion.get("criterion", "unknown"))
@@ -307,7 +356,7 @@ def analyse(data: dict[str, Any], input_path: Path, output_dir: Path) -> dict[st
         "metadata": metadata,
         "implementation": implementation,
         "benchmarks": analysed_benchmarks,
-        "acceptance_criteria": criteria,
+        "acceptance_criteria": analysed_criteria,
         "missing_benchmarks": data.get("missing_benchmarks", []),
         "merge_blockers": data.get("merge_blockers", []),
         "validation_status": data.get("validation_status", []),
@@ -409,9 +458,10 @@ def markdown_report(result: dict[str, Any]) -> str:
 
     lines.extend(["## Grid convergence", "", str(meta.get("grid_convergence_summary", "Not verified.")), ""])
     lines.extend(["## Sensitivity and robustness", "", str(meta.get("sensitivity_summary", "Not verified.")), ""])
-    lines.extend(["## Acceptance criteria", "", "| Criterion | Critical | Status | Evidence |", "| --- | --- | --- | --- |"])
+    lines.extend(["## Acceptance criteria", "", "| Criterion | Critical | Observed | Rule | Status | Evidence |", "| --- | --- | ---: | --- | --- | --- |"])
     for criterion in result["acceptance_criteria"]:
-        lines.append(f"| {criterion['criterion']} | {criterion.get('critical', False)} | {criterion['status']} | {criterion.get('evidence', '')} |")
+        rule = "n/a" if criterion.get("not_applicable") else f"{criterion.get('operator', '?')} {criterion.get('threshold', '?')} {criterion.get('unit', '')}".strip()
+        lines.append(f"| {criterion['criterion']} | {criterion.get('critical', False)} | {criterion.get('observed', 'n/a')} | {rule} | {criterion['status']} | {criterion.get('evidence', '')} |")
     lines.extend(["", "## Missing or non-conclusive work", ""])
     for item in result["missing_benchmarks"]:
         lines.append(f"- {item}")
@@ -468,7 +518,12 @@ def html_report(markdown: str, title: str) -> str:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path, help="versioned validation JSON")
-    parser.add_argument("--output-dir", type=Path, default=Path("reports/curvature-validation"))
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="campaign-specific output directory",
+    )
     parser.add_argument(
         "--strict-acceptance",
         action="store_true",

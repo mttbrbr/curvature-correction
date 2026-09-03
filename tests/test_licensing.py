@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: MIT
-"""Regression checks for repository licence and data boundaries."""
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Regression checks for repository licence and third-party boundaries."""
 
 from __future__ import annotations
 
@@ -17,11 +17,10 @@ TMR_REVISION = "ddf1840b6e928d1de60d920cafe431ed476f36a1"
 
 
 class LicensingTests(unittest.TestCase):
-    def test_root_notice_describes_mixed_licensing(self) -> None:
+    def test_root_notice_applies_gpl_to_the_repository(self) -> None:
         notice = (ROOT / "LICENSE").read_text()
-        self.assertIn("LICENSES/MIT.txt", notice)
         self.assertIn("LICENSES/GPL-3.0-or-later.txt", notice)
-        self.assertTrue((ROOT / "LICENSES/MIT.txt").read_text().startswith("MIT License\n"))
+        self.assertFalse((ROOT / "LICENSES/MIT.txt").exists())
         gpl = (ROOT / "LICENSES/GPL-3.0-or-later.txt").read_text()
         self.assertIn("GNU GENERAL PUBLIC LICENSE", gpl)
         self.assertIn("Version 3, 29 June 2007", gpl)
@@ -64,14 +63,26 @@ class LicensingTests(unittest.TestCase):
 
     def test_provenance_register_records_release_boundaries(self) -> None:
         register = (ROOT / "THIRD_PARTY.md").read_text()
-        for marker in (TMR_REVISION, "10.18419/DARUS-4345", "CC BY 4.0", "GPL-3.0-or-later", "user-supplied"):
+        for marker in ("GPL-3.0-or-later", "not approved or endorsed", "registered trade mark"):
             self.assertIn(marker, register)
 
-    def test_fetcher_is_mit_and_resource_dirs_only_document_policy(self) -> None:
-        self.assertIn("SPDX-License-Identifier: MIT", (ROOT / "tools/fetch_benchmark_data.py").read_text())
-        for case in ("tmrFlatPlate", "smitsCurve", "tmrNaca0012"):
-            readme = ROOT / f"tutorials/incompressible/simpleFoam/{case}/resources/README.md"
-            self.assertIn(TMR_REVISION, readme.read_text())
+    def test_fetcher_is_gpl(self) -> None:
+        self.assertIn(
+            "SPDX-License-Identifier: GPL-3.0-or-later",
+            (ROOT / "tools/fetch_benchmark_data.py").read_text(),
+        )
+
+    def test_source_files_are_gpl(self) -> None:
+        source_suffixes = {".C", ".H", ".py", ".sh"}
+        for source in (*ROOT.joinpath("src").rglob("*"), *ROOT.joinpath("tests").rglob("*"), *ROOT.joinpath("tools").rglob("*")):
+            if source.is_file() and source.suffix in source_suffixes:
+                with self.subTest(source=source.relative_to(ROOT)):
+                    spdx = [
+                        line for line in source.read_text(errors="ignore").splitlines()
+                        if "SPDX-License-Identifier:" in line
+                    ]
+                    self.assertTrue(spdx, "source file lacks an SPDX identifier")
+                    self.assertIn("GPL-3.0-or-later", spdx[0])
 
 
 if __name__ == "__main__":

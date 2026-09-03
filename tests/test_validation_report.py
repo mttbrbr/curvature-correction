@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for schema validation, metrics, classification and report outputs."""
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from tools.generate_curvature_validation_report import (  # noqa: E402
     analyse,
     classify,
     classify_neutral,
+    evaluate_criterion,
     main,
     weighted_metrics,
 )
@@ -24,14 +26,25 @@ from tools.generate_curvature_validation_report import (  # noqa: E402
 
 def minimal_data() -> dict:
     return {
-        "schema_version": 1,
-        "metadata": {"title": "test", "recommendation": "not validated"},
+        "schema_version": 2,
+        "metadata": {
+            "title": "test",
+            "recommendation": "not validated",
+            "campaign_id": "test-001",
+            "commit": "0123456789abcdef",
+            "openfoam_version": "v2412",
+            "compiler": "gcc-test",
+            "archive_manifest_sha256": "a" * 64,
+        },
         "implementation": {"summary": "test", "constants": [], "code_map": [], "risks": []},
         "benchmarks": [
             {
                 "id": "case",
                 "name": "case",
                 "category": "neutral",
+                "case_revision": "test-v1",
+                "input_sha256": "b" * 64,
+                "meshes": ["coarse", "medium", "fine"],
                 "converged": True,
                 "grid_independent": True,
                 "datasets": [
@@ -42,16 +55,40 @@ def minimal_data() -> dict:
                         "baseline": [2, 2],
                         "corrected": [1.1, 0.9],
                         "reference": [1, 1],
+                        "reference_citation": "Example reference",
+                        "reference_publication": "aggregate-only",
                         "weight": [1, 1],
                     }
                 ],
             }
         ],
-        "acceptance_criteria": [{"id": "unit", "criterion": "unit", "critical": True, "status": "pass"}],
+        "acceptance_criteria": [
+            {
+                "id": "unit",
+                "criterion": "unit",
+                "critical": True,
+                "observed": 0.01,
+                "operator": "le",
+                "threshold": 0.02,
+            }
+        ],
     }
 
 
 class MetricTests(unittest.TestCase):
+    def test_acceptance_status_is_computed(self) -> None:
+        self.assertEqual(
+            evaluate_criterion({"observed": 0.01, "operator": "le", "threshold": 0.02}),
+            "pass",
+        )
+        self.assertEqual(
+            evaluate_criterion({"observed": 0.03, "operator": "le", "threshold": 0.02}),
+            "fail",
+        )
+        self.assertEqual(evaluate_criterion({"observed": None}), "not-verified")
+        with self.assertRaises(DataError):
+            evaluate_criterion({"status": "pass"})
+
     def test_weighted_metrics(self) -> None:
         metrics = weighted_metrics([2, 4], [1, 2], [1, 3])
         self.assertAlmostEqual(metrics.rmse, (13 / 4) ** 0.5)
@@ -91,6 +128,14 @@ class MetricTests(unittest.TestCase):
         with self.assertRaises(DataError):
             weighted_metrics([float("nan")], [1], [1])
 
+    def test_schema_requires_three_meshes_and_provenance(self) -> None:
+        data = minimal_data()
+        data["benchmarks"][0]["meshes"] = ["coarse", "fine"]
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "input.json"
+            with self.assertRaises(DataError):
+                analyse(data, source, Path(temporary) / "output")
+
 
 class GeneratorTests(unittest.TestCase):
     def test_generates_all_outputs(self) -> None:
@@ -104,6 +149,10 @@ class GeneratorTests(unittest.TestCase):
             self.assertTrue((output / "curvature-validation-report.html").is_file())
             self.assertTrue((output / "aggregated-metrics.json").is_file())
             self.assertTrue((output / "plots/case-q.svg").is_file())
+            self.assertNotIn(
+                "reference",
+                (output / "plots/case-q.svg").read_text(),
+            )
 
     def test_csv_input_and_missing_reference_list(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -127,7 +176,7 @@ class GeneratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             data = minimal_data()
-            data["acceptance_criteria"][0]["status"] = "fail"
+            data["acceptance_criteria"][0]["observed"] = 0.03
             source = directory / "input.json"
             source.write_text(json.dumps(data))
             output = directory / "out"
@@ -138,7 +187,7 @@ class GeneratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             data = minimal_data()
-            data["acceptance_criteria"][0]["status"] = "not-verified"
+            data["acceptance_criteria"][0]["observed"] = None
             source = directory / "input.json"
             source.write_text(json.dumps(data))
             normal_output = directory / "normal"

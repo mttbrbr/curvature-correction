@@ -31,6 +31,7 @@ class SpalartAllmarasCC
     dimensionedScalar Cr2_;
     dimensionedScalar Cr3_;
     Switch writeCurvatureDiagnostics_;
+    const bool noFt2Variant_;
     volScalarField fr1_;
     volVectorField OmegaRot_;
     volScalarField curvatureIndicator_;
@@ -67,6 +68,40 @@ public:
     virtual ~SpalartAllmarasCC() = default;
     virtual bool read() override;
     virtual void correct() override;
+};
+
+
+//- TMR-compatible SA-noft2-RC runtime variant.
+template<class BasicTurbulenceModel>
+class SpalartAllmarasNoFt2RC
+:
+    public SpalartAllmarasCC<BasicTurbulenceModel>
+{
+public:
+    typedef typename BasicTurbulenceModel::alphaField alphaField;
+    typedef typename BasicTurbulenceModel::rhoField rhoField;
+    typedef typename BasicTurbulenceModel::transportModel transportModel;
+
+    TypeName("SpalartAllmarasNoFt2RC");
+
+    SpalartAllmarasNoFt2RC
+    (
+        const alphaField& alpha,
+        const rhoField& rho,
+        const volVectorField& U,
+        const surfaceScalarField& alphaRhoPhi,
+        const surfaceScalarField& phi,
+        const transportModel& transport,
+        const word& propertiesName = turbulenceModel::propertiesName,
+        const word& type = typeName
+    )
+    :
+        SpalartAllmarasCC<BasicTurbulenceModel>
+        (
+            alpha, rho, U, alphaRhoPhi, phi, transport,
+            propertiesName, type
+        )
+    {}
 };
 
 } // End namespace RASModels

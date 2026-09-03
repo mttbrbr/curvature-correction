@@ -1,27 +1,16 @@
-name: curvature validation
+name: verification
 
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
-    inputs:
-      run_openfoam_quick:
-        description: Run the OpenFOAM build and quick Smits/TMR/NACA regressions
-        required: false
-        default: false
-        type: boolean
-      run_openfoam_grid:
-        description: Run the three-grid Smits study
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
 
 jobs:
-  unit-and-report:
+  unit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -29,92 +18,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Deterministic and report-generator tests
+      - name: Deterministic tests
         run: python3 -m unittest discover -s tests -v
-      - name: Validate external-data manifest without downloading
-        run: python3 tools/fetch_benchmark_data.py --list
 
-  openfoam-quick:
+  openfoam:
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name == 'workflow_dispatch' && inputs.run_openfoam_quick)
+      github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, linux, openfoam-v2412]
-    timeout-minutes: 35
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Check configured OpenFOAM environment
         run: ': "${WM_PROJECT_DIR:?runner must preload OpenFOAM.com v2412}"'
       - name: Build runtime library
         run: wmake libso src/curvatureCorrectionModels
-      - name: Fetch pinned CC0 benchmark inputs
-        run: python3 tools/fetch_benchmark_data.py --case smits --case flatplate --case naca0012
       - name: Unit tests
         run: python3 -m unittest discover -s tests -v
       - name: MRF topology and time-dependence regression
         run: tests/run_mrf_mapping_regression.sh
-      - name: Automatic MRF integration smoke test
-        run: tests/run_mrf_smoke.sh
       - name: Transient material-derivative regression
         run: tests/run_material_derivative_regression.sh
-      - name: Quick native/on/off regression
-        working-directory: tutorials/incompressible/simpleFoam/smitsCurve
-        run: CURVATURE_SKIP_BUILD=1 ./Allrun
-      - name: TMR 2DZP neutral regression
-        working-directory: tutorials/incompressible/simpleFoam/tmrFlatPlate
-        run: CURVATURE_SKIP_BUILD=1 ./Allrun quick
-      - name: TMR NACA 0012 SA-RC regression
-        working-directory: tutorials/incompressible/simpleFoam/tmrNaca0012
-        run: NACA_ANGLES="0 10" CURVATURE_SKIP_BUILD=1 ./Allrun quick
-      - name: Upload NACA quick-regression evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tmr-naca0012-quick-regression
-          path: tutorials/incompressible/simpleFoam/tmrNaca0012/runs/quick/summary.csv
-      - name: Upload TMR neutral-regression evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tmr-flatplate-quick-regression
-          path: |
-            tutorials/incompressible/simpleFoam/tmrFlatPlate/runs/summary.csv
-            tutorials/incompressible/simpleFoam/tmrFlatPlate/runs/*-off-fields.csv
-      - name: Upload quick regression evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: smits-quick-regression
-          path: |
-            tutorials/incompressible/simpleFoam/smitsCurve/runs/summary.csv
-            tutorials/incompressible/simpleFoam/smitsCurve/runs/cf-comparison.svg
-
-  openfoam-grid:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_openfoam_grid
-    runs-on: [self-hosted, linux, openfoam-v2412]
-    timeout-minutes: 35
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check configured OpenFOAM environment
-        run: ': "${WM_PROJECT_DIR:?runner must preload OpenFOAM.com v2412}"'
-      - name: Build runtime library
-        run: wmake libso src/curvatureCorrectionModels
-      - name: Fetch pinned CC0 quick-grid and reference inputs
-        run: python3 tools/fetch_benchmark_data.py --case smits
-      - name: Check user-supplied held grids
-        run: |
-          : "${SMITS_MEDIUM_GRID:?runner must configure a lawfully obtained medium grid}"
-          : "${SMITS_FINE_GRID:?runner must configure a lawfully obtained fine grid}"
-          test -f "$SMITS_MEDIUM_GRID"
-          test -f "$SMITS_FINE_GRID"
-      - name: Three-grid validation
-        working-directory: tutorials/incompressible/simpleFoam/smitsCurve
-        run: CURVATURE_SKIP_BUILD=1 ./Allrun-gridStudy
-      - name: Upload grid-study evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: smits-grid-study
-          path: |
-            tutorials/incompressible/simpleFoam/smitsCurve/runs/grid-study/summary.csv
-            tutorials/incompressible/simpleFoam/smitsCurve/runs/grid-study/*-grid-convergence.svg

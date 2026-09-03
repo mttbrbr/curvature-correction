@@ -174,7 +174,7 @@ kOmegaSSTCC<BasicTurbulenceModel>::kOmegaSSTCC
         (
             "curvatureCorrection",
             this->coeffDict_,
-            false
+            type == word("kOmegaSST2003RC")
         )
     ),
     Cr1_
@@ -313,13 +313,22 @@ kOmegaSSTCC<BasicTurbulenceModel>::kOmegaSSTCC
         dimensionedScalar(dimless, scalar(0))
     )
 {
-    validateCorrectionCoefficients();
-    updateDiagnosticWriteOptions();
-
     if (type == typeName)
     {
-        this->printCoeffs(type);
+        static bool warned = false;
+        if (!warned)
+        {
+            WarningInFunction
+                << "Runtime model " << typeName << " is deprecated; use "
+                << "kOmegaSST2003RC. The legacy name will remain available "
+                << "through the 1.x release series." << nl;
+            warned = true;
+        }
     }
+
+    validateCorrectionCoefficients();
+    updateDiagnosticWriteOptions();
+    this->printCoeffs(type);
 }
 
 

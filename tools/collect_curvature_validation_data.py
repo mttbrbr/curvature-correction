@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Collect reproducible, lightweight validation data from completed tutorials."""
 
 from __future__ import annotations
