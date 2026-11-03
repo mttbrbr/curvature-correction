@@ -1,0 +1,15 @@
+FoamFile { format ascii; class volScalarField; object nuTilda; }
+dimensions [0 2 -1 0 0 0 0];
+internalField uniform 4.55714285714e-05;
+boundaryField
+{
+    inlet { type fixedValue; value uniform 4.55714285714e-05; }
+    outlet
+    {
+        type inletOutlet;
+        inletValue uniform 4.55714285714e-05;
+        value uniform 4.55714285714e-05;
+    }
+    "(convexWall|concaveWall)" { type fixedValue; value uniform 0; }
+    frontAndBack { type empty; }
+}

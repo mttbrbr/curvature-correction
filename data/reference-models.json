@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "references": {
+    "xiao-2024-rotating-pipe": {
+      "authors": "M. Xiao, A. Ceci, P. Orlandi and S. Pirozzoli",
+      "citation": "Journal of Fluid Mechanics 996 (2024), A24",
+      "doi": "10.1017/jfm.2024.811",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "source_url": "https://www.cambridge.org/core/journals/journal-of-fluid-mechanics/article/direct-numerical-simulation-of-drag-reduction-in-rotating-pipe-flow-up-to-boldsymbolretau-approx-3000/73EB85743FE6DDBB25E1C2E80E5632D5",
+      "transcription": "Table 1 global values and equations 3.2/3.4 transcribed without modification; no raw DNS data redistributed",
+      "re_bulk": 44000,
+      "re_tau_nonrotating": 1136.59,
+      "rotation_definition": "N = Omega*R/Ubulk",
+      "domain_length_over_radius": 15.0,
+      "axial_defect_fit": {
+        "equation": "(Ucl-Ux)/(Omega*R) = phi(N)/N*(r/R)^alpha(N)",
+        "phi": "0.90 + 0.25*log(N)",
+        "alpha": "2.0 - 0.071*N^1.2",
+        "radius_range": [0.0, 0.9]
+      },
+      "azimuthal_fit": {
+        "equation": "Utheta/(Omega*R) = (r/R)^psi(N)",
+        "psi": "2.48 - 0.45*N^0.57",
+        "radius_range": [0.2, 0.9]
+      },
+      "global_values": [
+        {
+          "N": 0.0,
+          "re_tau": 1136.59,
+          "friction_factor": 0.021352,
+          "friction_factor_relative_uncertainty": 0.001,
+          "drag_reduction": 0.0,
+          "drag_reduction_absolute_uncertainty": 0.0
+        },
+        {
+          "N": 0.5,
+          "re_tau": 1013.63,
+          "friction_factor": 0.016982,
+          "friction_factor_relative_uncertainty": 0.0008,
+          "drag_reduction": 0.2047,
+          "drag_reduction_absolute_uncertainty": 0.005
+        },
+        {
+          "N": 1.0,
+          "re_tau": 892.25,
+          "friction_factor": 0.013158,
+          "friction_factor_relative_uncertainty": 0.0014,
+          "drag_reduction": 0.3837,
+          "drag_reduction_absolute_uncertainty": 0.0028
+        }
+      ]
+    }
+  }
+}

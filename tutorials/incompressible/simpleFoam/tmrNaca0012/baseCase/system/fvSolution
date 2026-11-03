@@ -1,0 +1,57 @@
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object fvSolution;
+}
+
+solvers
+{
+    p
+    {
+        solver PCG;
+        preconditioner DIC;
+        tolerance 1e-9;
+        relTol 0.02;
+    }
+    Phi
+    {
+        solver GAMG;
+        smoother GaussSeidel;
+        tolerance 1e-8;
+        relTol 0;
+    }
+    "(U|k|omega|nuTilda)"
+    {
+        solver smoothSolver;
+        smoother GaussSeidel;
+        tolerance 1e-8;
+        relTol 0.05;
+    }
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 1;
+    residualControl
+    {
+        p 1e-6;
+        U 1e-6;
+        "(k|omega|nuTilda)" 1e-6;
+    }
+}
+
+potentialFlow
+{
+    nNonOrthogonalCorrectors 10;
+}
+
+relaxationFactors
+{
+    fields { p 0.15; }
+    equations
+    {
+        U 0.25;
+        "(k|omega|nuTilda)" 0.3;
+    }
+}

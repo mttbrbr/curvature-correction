@@ -95,3 +95,8 @@ __pycache__/
 # Validation input snapshots are generated locally or in CI.
 data/curvature-validation/**
 !data/curvature-validation/README.md
+
+# Tutorial results and externally downloaded rotating-pipe data
+tutorials/**/runs/
+tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/**
+!tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/README.md

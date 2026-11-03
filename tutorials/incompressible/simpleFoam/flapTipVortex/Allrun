@@ -1,0 +1,49 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -eu
+
+caseDir=$(CDPATH= cd -- "${0%/*}" && pwd)
+repoDir=$(CDPATH= cd -- "$caseDir/../../../.." && pwd)
+. "${WM_PROJECT_DIR:?OpenFOAM environment is not loaded}/bin/tools/RunFunctions"
+
+echo "Building curvature-correction library"
+wmake libso "$repoDir/src/curvatureCorrectionModels"
+
+cd "$caseDir"
+rm -rf runs
+mkdir -p runs/SST runs/SSTCC
+for variant in SST SSTCC
+do
+    cp -r 0.orig "runs/$variant/0"
+    cp -r constant "runs/$variant/constant"
+    cp -r system "runs/$variant/system"
+    cp "variants/turbulenceProperties.$variant" \
+        "runs/$variant/constant/turbulenceProperties"
+    touch "runs/$variant/$variant.foam"
+done
+
+echo "Generating the common 3-D flap mesh"
+cd "$caseDir/runs/SSTCC"
+runApplication blockMesh
+runApplication surfaceFeatureExtract
+runApplication snappyHexMesh -overwrite
+runApplication checkMesh -allGeometry -allTopology
+rm -rf "$caseDir/runs/SST/constant/polyMesh"
+cp -r constant/polyMesh "$caseDir/runs/SST/constant/polyMesh"
+
+for variant in SST SSTCC
+do
+    echo "Running $variant"
+    cd "$caseDir/runs/$variant"
+    runApplication potentialFoam -writePhi
+    runApplication decomposePar
+    runParallel simpleFoam
+    runApplication reconstructPar -latestTime
+    runApplication postProcess -latestTime \
+        -fields '(Q vorticity)' -func Qsurface
+    runApplication foamToVTK -latestTime -fields '(U p k omega nut Q vorticity)'
+done
+
+echo
+echo "Done. Open runs/SSTCC/VTK/SSTCC_*.vtm in ParaView."
+echo "Or open runs/SSTCC/SSTCC.foam and postProcessing/Qsurface/*/Q.vtp."

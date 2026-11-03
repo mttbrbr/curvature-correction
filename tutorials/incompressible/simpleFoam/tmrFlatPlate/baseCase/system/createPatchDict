@@ -1,0 +1,41 @@
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object createPatchDict;
+}
+
+pointSync false;
+patches
+(
+    {
+        name symmetry;
+        patchInfo { type symmetryPlane; }
+        constructFrom patches;
+        patches (auto0);
+    }
+    {
+        name top;
+        patchInfo { type patch; }
+        constructFrom patches;
+        patches (auto5);
+    }
+    {
+        name inlet;
+        patchInfo { type patch; }
+        constructFrom patches;
+        patches (auto3);
+    }
+    {
+        name outlet;
+        patchInfo { type patch; }
+        constructFrom patches;
+        patches (auto4);
+    }
+    {
+        name frontAndBack;
+        patchInfo { type empty; }
+        constructFrom patches;
+        patches (auto1 auto2);
+    }
+);

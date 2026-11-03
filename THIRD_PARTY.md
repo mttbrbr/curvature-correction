@@ -40,6 +40,15 @@ because file-level redistribution rights were not verified. The optional
 Appelbaum--Kloker--Wenzel dataset is CC BY 4.0 and would require attribution,
 version and modification notices before adoption.
 
-The runnable OpenFOAM tutorial cases are intentionally not distributed in this
-repository. Report-generation utilities are retained for analysing lawfully
-obtained external results.
+Runnable OpenFOAM tutorial definitions and automation are distributed under
+the repository GPL-3.0-or-later licence. Downloaded benchmark inputs and
+generated simulation results are excluded from version control.
+
+## Xiao rotating-pipe reference
+
+`data/reference-models.json` contains transcriptions of Table 1 and equations
+3.2/3.4 from M. Xiao, A. Ceci, P. Orlandi and S. Pirozzoli, Journal of Fluid
+Mechanics 996 (2024), A24, <https://doi.org/10.1017/jfm.2024.811>. These reference
+values retain their CC BY 4.0 licence
+(<https://creativecommons.org/licenses/by/4.0/>); source, authors and
+transcription details are recorded in the file. No raw DNS data is bundled.

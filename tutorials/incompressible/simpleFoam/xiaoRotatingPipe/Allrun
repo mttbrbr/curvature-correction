@@ -1,0 +1,157 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -eu
+
+cd "${0%/*}" || exit 1
+: "${WM_PROJECT_DIR:?OpenFOAM.com v2412 environment is not loaded}"
+tutorial_dir=$(pwd)
+repo_dir=$(cd "$tutorial_dir/../../../.." && pwd)
+mode=${1:-smoke}
+case "$mode" in smoke|validation) ;; *) echo "ERROR: mode must be smoke or validation" >&2; exit 2 ;; esac
+
+python3 -m json.tool "$repo_dir/data/reference-models.json" >/dev/null
+if [ "${CURVATURE_SKIP_BUILD:-0}" != 1 ]; then
+    wmake libso "$repo_dir/src/curvatureCorrectionModels"
+fi
+
+mpi_procs=${CURVATURE_MPI_PROCS:-1}
+case "$mpi_procs" in
+    *[!0-9]*|'') echo "ERROR: CURVATURE_MPI_PROCS must be a positive integer" >&2; exit 2 ;;
+    0) echo "ERROR: CURVATURE_MPI_PROCS must be a positive integer" >&2; exit 2 ;;
+esac
+resume=${CURVATURE_DNS_RESUME:-0}
+results="$tutorial_dir/runs/$mode"
+[ "$resume" = 1 ] || rm -rf "$results"
+mkdir -p "$results"
+
+run_case()
+{
+    level=$1
+    rotation=$2
+    omega_value=$3
+    family=$4
+    variant=$5
+    scheme=${6:-linearupwind}
+    level_dir="$results/$level"
+    mesh_case="$results/_mesh-$level"
+    case_name="$rotation-$family-$variant"
+    [ "$scheme" = linearupwind ] || case_name="$case_name-$scheme"
+    case_dir="$level_dir/$case_name"
+    mkdir -p "$level_dir"
+
+    if [ ! -d "$mesh_case/constant/polyMesh" ]; then
+        rm -rf "$mesh_case"
+        cp -a "$tutorial_dir/baseCase" "$mesh_case"
+        python3 "$tutorial_dir/tools/generate_mesh.py" \
+            --level "$level" --output "$mesh_case/system/blockMeshDict"
+        blockMesh -case "$mesh_case" > "$mesh_case/log.blockMesh" 2>&1
+        checkMesh -case "$mesh_case" -allTopology -allGeometry \
+            > "$mesh_case/log.checkMesh" 2>&1
+        grep -q "Mesh OK" "$mesh_case/log.checkMesh"
+    fi
+
+    if [ "$resume" = 1 ] && [ -f "$case_dir/log.simpleFoam" ] && \
+       grep -q '^End$' "$case_dir/log.simpleFoam" && \
+       [ -d "$case_dir/postProcessing/sampleProfiles" ]; then
+        echo "Reusing $mode/$level/$case_name"
+        return
+    fi
+
+    case "$family:$variant" in
+        sst:native) model=kOmegaSST ;;
+        sst:on|sst:off) model=kOmegaSSTCC ;;
+        sa:native) model=SpalartAllmaras ;;
+        sa:on|sa:off) model=SpalartAllmarasCC ;;
+        *) echo "ERROR: invalid model $family:$variant" >&2; exit 2 ;;
+    esac
+
+    echo "Running $mode/$level/$case_name"
+    rm -rf "$case_dir"
+    cp -a "$tutorial_dir/baseCase" "$case_dir"
+    cp -a "$mesh_case/constant/polyMesh" "$case_dir/constant/"
+    cp -a "$case_dir/0.orig" "$case_dir/0"
+    sed "s/@OMEGA@/$omega_value/g" \
+        "$tutorial_dir/baseCase/constant/MRFProperties.template" \
+        > "$case_dir/constant/MRFProperties"
+    rm -f "$case_dir/constant/MRFProperties.template"
+    foamDictionary "$case_dir/constant/turbulenceProperties" \
+        -entry RAS/RASModel -set "$model" >/dev/null
+    foamDictionary "$case_dir/0/U" \
+        -entry boundaryField/wall/omega -set "$omega_value" >/dev/null
+
+    sample_fields="U turbulenceProperties:R nut"
+    [ "$family" = sst ] && sample_fields="$sample_fields k"
+    if [ "$variant" != native ]; then
+        correction=on
+        [ "$variant" = off ] && correction=off
+        if [ "$family" = sst ]; then coeffs=RAS/kOmegaSSTCCCoeffs; else coeffs=RAS/SpalartAllmarasCCCoeffs; fi
+        foamDictionary "$case_dir/constant/turbulenceProperties" \
+            -entry "$coeffs/curvatureCorrection" -set "$correction" >/dev/null
+        sample_fields="$sample_fields fr1 fr1Clipped curvatureIndicator productionRatio"
+    fi
+    foamDictionary "$case_dir/system/sampleProfiles" \
+        -entry fields -set "($sample_fields)" >/dev/null
+    if [ "$scheme" = upwind ]; then
+        foamDictionary "$case_dir/system/fvSchemes" \
+            -entry 'divSchemes/div(phi,U)' -set 'bounded Gauss upwind' >/dev/null
+    fi
+    if [ "$mode" = smoke ]; then
+        foamDictionary "$case_dir/system/controlDict" -entry endTime -set 500 >/dev/null
+        foamDictionary "$case_dir/system/controlDict" -entry writeInterval -set 500 >/dev/null
+    fi
+
+    if [ "$mpi_procs" -gt 1 ]; then
+        foamDictionary "$case_dir/system/decomposeParDict" \
+            -entry numberOfSubdomains -set "$mpi_procs" >/dev/null
+        decomposePar -case "$case_dir" -force > "$case_dir/log.decomposePar" 2>&1
+        mpirun -np "$mpi_procs" simpleFoam -case "$case_dir" -parallel \
+            > "$case_dir/log.simpleFoam" 2>&1
+        reconstructPar -case "$case_dir" -latestTime > "$case_dir/log.reconstructPar" 2>&1
+    else
+        simpleFoam -case "$case_dir" > "$case_dir/log.simpleFoam" 2>&1
+    fi
+    grep -q '^End$' "$case_dir/log.simpleFoam"
+    postProcess -case "$case_dir" -latestTime -func sampleProfiles \
+        > "$case_dir/log.sampleProfiles" 2>&1
+}
+
+if [ "$mode" = smoke ]; then
+    run_case smoke n05 1 sst native
+    run_case smoke n05 1 sst on
+    levels="smoke"
+else
+    levels="smoke quick medium"
+    for level in $levels
+    do
+        for rotation_spec in "n0 0" "n05 1" "n1 2"
+        do
+            set -- $rotation_spec
+            for family in sst sa
+            do
+                run_case "$level" "$1" "$2" "$family" native
+                run_case "$level" "$1" "$2" "$family" on
+            done
+        done
+    done
+    for family in sst sa
+    do
+        run_case medium n1 2 "$family" off
+        run_case medium n1 2 "$family" native upwind
+        run_case medium n1 2 "$family" on upwind
+    done
+fi
+
+for level in $levels
+do
+    python3 "$tutorial_dir/tools/analyse.py" \
+        --results "$results/$level" \
+        --reference-models "$repo_dir/data/reference-models.json" \
+        --level "$level" --mode "$mode"
+done
+if [ "$mode" = validation ]; then
+    python3 "$tutorial_dir/tools/analyse.py" \
+        --validation-root "$results" \
+        --reference-models "$repo_dir/data/reference-models.json" \
+        --require-complete
+fi
+echo "Xiao rotating-pipe $mode results: $results"

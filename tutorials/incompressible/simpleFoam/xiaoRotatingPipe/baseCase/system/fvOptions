@@ -1,0 +1,9 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile { format ascii; class dictionary; object fvOptions; }
+momentumSource
+{
+    type meanVelocityForce;
+    selectionMode all;
+    fields (U);
+    Ubar (1 0 0);
+}
