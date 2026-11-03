@@ -44,8 +44,8 @@ echo "Preparing identical potential-flow initial conditions"
 cp -a "$tutorialDir/baseCase" "$initialCase"
 cp -a "$meshCase/constant/polyMesh" "$initialCase/constant/"
 cp -a "$initialCase/0.orig" "$initialCase/0"
-foamDictionary "$initialCase/constant/turbulenceProperties" -entry RAS/RASModel -set kOmegaSSTCC
-foamDictionary "$initialCase/constant/turbulenceProperties" -entry RAS/kOmegaSSTCCCoeffs/curvatureCorrection -set on
+foamDictionary "$initialCase/constant/turbulenceProperties" -entry RAS/RASModel -set kOmegaSST2003RC
+foamDictionary "$initialCase/constant/turbulenceProperties" -entry RAS/kOmegaSST2003RCCoeffs/curvatureCorrection -set on
 foamDictionary "$initialCase/system/controlDict" -entry writeInterval -set 50
 foamDictionary "$initialCase/system/controlDict" -entry purgeWrite -set 0
 potentialFoam -case "$initialCase" -writep > "$initialCase/log.potentialFoam" 2>&1

@@ -10,7 +10,12 @@ All notable changes follow semantic versioning.
 - Make MRF support explicitly experimental.
 - Introduce computed schema-v2 validation gates and a private-runner workflow.
 - Apply GPL-3.0-or-later repository-wide and add OPENFOAM® trade-mark notices.
-- Remove runnable tutorial cases from the public repository.
+- Restore runnable OpenFOAM tutorials and add TMR/Xiao rotating-pipe
+  benchmarks; tutorials now use the explicit RC runtime names.
+- Fix a GCC 14 build failure in `SpalartAllmarasCC.C` (missing dependent
+  `template` keyword).
+- Add a `curvedChannel` README, a `xiaoRotatingPipe/Allclean` script and a
+  tutorial-consistency test.
 
 The first tagged release from this line will be `v0.1.0`. Version `v1.0.0` is
 reserved for a campaign satisfying every critical gate in

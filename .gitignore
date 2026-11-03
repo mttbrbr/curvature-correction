@@ -1,74 +1,22 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
+# Compiled objects and libraries
 *.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
+*.d
 *.so
-*.dylib
-*.dll
 *.so.*
-
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
 *.a
-*.lib
 
-# Executables
-*.exe
-*.out
-*.app
-
-# Build directories
-build/
-Build/
-build-*/
-
-# CMake generated files
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-install_manifest.txt
-compile_commands.json
-
-# Temporary files
+# Editor and temporary files
 *.tmp
 *.log
 *.bak
 *.swp
 
-# vcpkg
-vcpkg_installed/
-
-# debug information files
-*.dwo
-
-# test output & cache
-Testing/
+# Local caches (fetched benchmark data lives in .cache/)
 .cache/
+__pycache__/
+*.pyc
 
-# OpenFOAM wmake generated files
+# OpenFOAM wmake output
 lnInclude/
 Make/linux*
 **/Make/linux*/
@@ -80,23 +28,19 @@ processor*/
 postProcessing/
 log.*
 
-# External benchmark data is fetched into .cache and materialized as ignored links.
+# Tutorial results
+tutorials/**/runs/
+
+# External benchmark inputs are fetched into .cache and materialised as ignored links.
 tutorials/incompressible/simpleFoam/smitsCurve/resources/**
 !tutorials/incompressible/simpleFoam/smitsCurve/resources/README.md
 tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/**
 !tutorials/incompressible/simpleFoam/tmrFlatPlate/resources/README.md
 tutorials/incompressible/simpleFoam/tmrNaca0012/resources/**
 !tutorials/incompressible/simpleFoam/tmrNaca0012/resources/README.md
-
-# Python analysis cache
-__pycache__/
-*.pyc
+tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/**
+!tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/README.md
 
 # Validation input snapshots are generated locally or in CI.
 data/curvature-validation/**
 !data/curvature-validation/README.md
-
-# Tutorial results and externally downloaded rotating-pipe data
-tutorials/**/runs/
-tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/**
-!tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/README.md

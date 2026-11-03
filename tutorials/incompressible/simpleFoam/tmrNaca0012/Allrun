@@ -122,7 +122,7 @@ runCase()
 for angle in $angles
 do
     runCase "$angle" sa SpalartAllmaras
-    runCase "$angle" sarc SpalartAllmarasCC
+    runCase "$angle" sarc SpalartAllmarasNoFt2RC
 done
 
 python3 "$tutorialDir/tools/analyse.py" "$tutorialDir" "$gridLevel"

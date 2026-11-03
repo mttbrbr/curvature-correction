@@ -33,8 +33,9 @@ consistent. The Lagrangian derivative is discretised as
 
 For a volumetric velocity flux the final two terms recover `U.grad(S)`, also on
 a non-solenoidal discrete field. For `steadyState` the first term is zero. The
-implementation is in `common/curvatureFunctions.C:16-49`; tensor construction
-and invariants are at lines 45-69 (SST) and 93-119 (SA).
+implementation is `materialDerivativeOfStrain()` in
+`common/curvatureFunctions.C`; tensor construction and invariants are in
+`sstCorrectionFactor()` and `saCorrectionFactor()` in the same file.
 
 All terms are dimensionally consistent. `S`, `W`, and `omega` have dimensions
 T^-1; `DS/Dt` is T^-2; both invariant numerators and denominators are T^-4;
@@ -67,10 +68,10 @@ f_{r1}=\min(\max(f_{rotation},f_{min}),f_{max}).
 \]
 
 Defaults are `Cr1=1`, `Cr2=2`, `Cr3=1`, `frMin=0`, and `frMax=1.25`
-(`kOmegaSSTCC.C:71-113`). Only `frMin >= 0` and `frMin <= frMax` are validated.
+(constructor in `kOmegaSSTCC.C`). Only `frMin >= 0` and `frMin <= frMax` are validated.
 
 The override calls the native raw production and multiplies it by `fr1`
-(`kOmegaSSTCC.C:10-43`). In the v2412 parent, this corrected raw production is
+(`kOmegaSSTCC::GbyNu0()`). In the v2412 parent, this corrected raw production is
 used to form `G=nut*GbyNu0`; the omega production limiter is then applied to
 `GbyNu0`, and the k production limiter to `G`. Thus both transport equations
 receive the correction, before their native limiters. `k`, `omega`, and `nut`
@@ -96,14 +97,14 @@ r^*=S/W,\qquad D^2=\tfrac12(S^2+W^2),
 \]
 
 with the same functional form for `fr1`, using `Cr1=1`, `Cr2=12`, and `Cr3=1`.
-In accordance with SA-RC, it is not clipped (`curvatureFunctions.C:241-247`).
+In accordance with SA-RC, it is not clipped (`saCorrectionFactor()` in `curvatureFunctions.C`).
 
 The native production
 `Cb1*(1-ft2)*Stilda*nuTilda` becomes
 `Cb1*(fr1-ft2)*Stilda*nuTilda`
-(`SpalartAllmarasCC.C:139-160`). Destruction, diffusion, `Stilda`, wall distance,
+(`SpalartAllmarasCC::correct()`). Destruction, diffusion, `Stilda`, wall distance,
 and `fv1` are unchanged. The solved working variable `nuTilda` is bounded at
-zero and `nut=nuTilda*fv1` is recomputed (`SpalartAllmarasCC.C:164-174`). The
+zero and `nut=nuTilda*fv1` is recomputed (end of `SpalartAllmarasCC::correct()`). The
 v2412 parent defaults `ft2=false`, so the usual effective production multiplier
 is simply `fr1` unless the user opts into `ft2`.
 
@@ -187,7 +188,8 @@ disjoint zones, opposite angular velocities, time-varying `Function1` omega,
 boundary consistency, serial/MPI operation, and fatal rejection of overlaps
 and duplicate registered lists. A solver MRF smoke test was also run during
 development to verify finite execution, diagnostic output and a two-rank
-restart; that tutorial-dependent smoke case is not distributed. Physical
+restart. The rotating-pipe tutorials (`tmrRotatingPipe`, `xiaoRotatingPipe`)
+provide the corresponding runnable inertial/MRF pairs. Physical
 rotating-channel validation remains outstanding.
 
 ## Literature comparison and disposition
@@ -214,6 +216,6 @@ Primary references:
 The implementation is formula-consistent in its inertial scope. OpenFOAM.com
 v2412 MRF mapping is verified algebraically but remains experimental. The audit
 alone cannot establish predictive accuracy. Historical development runs passed
-the neutral-flow regression on two TMR 2DZP grids; the runnable tutorial cases
-are not distributed. Inertial wingtip-vortex and concave-curvature campaigns
+the neutral-flow regression on two TMR 2DZP grids; the corresponding runnable
+cases are distributed under `tutorials/incompressible/simpleFoam`. Inertial wingtip-vortex and concave-curvature campaigns
 remain the physical v1.0 acceptance gates.

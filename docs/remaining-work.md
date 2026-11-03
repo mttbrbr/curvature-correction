@@ -1,6 +1,6 @@
 # Remaining implementation and validation work
 
-Status date: 2026-08-05. This backlog is issue-ready because the repository
+Status date: 2026-11-03. This backlog is issue-ready because the repository
 GitHub Project cannot be updated with the currently available credentials.
 
 ## Completed in the current implementation
@@ -16,6 +16,11 @@ GitHub Project cannot be updated with the currently available credentials.
   serial/MPI consistency, overlap rejection, and duplicate registry rejection.
 - Pinned checksum-verifying external-data fetch, hold policy, repository-wide GPL
   licensing, strict report mode, and automatic quick CI for trusted changes.
+- Runnable tutorials restored (curved channel, flap-tip vortex, Smits, TMR flat
+  plate, NACA 0012, TMR and Xiao rotating pipes) and migrated to the explicit
+  `kOmegaSST2003RC`/`SpalartAllmarasNoFt2RC` runtime names.
+- GCC 14 build fix (dependent `template` keyword in `SpalartAllmarasCC.C`);
+  library and both compiled regressions verified on OpenFOAM.com v2412.
 
 ## Proposed GitHub issues
 

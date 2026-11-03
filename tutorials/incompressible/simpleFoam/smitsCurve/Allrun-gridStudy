@@ -105,11 +105,11 @@ runCase()
     foamDictionary "$caseDir/constant/turbulenceProperties" -entry RAS/RASModel -set "$model"
 
     case "$model" in
-        kOmegaSSTCC)
-            foamDictionary "$caseDir/constant/turbulenceProperties" -entry RAS/kOmegaSSTCCCoeffs/curvatureCorrection -set "$correction"
+        kOmegaSST2003RC)
+            foamDictionary "$caseDir/constant/turbulenceProperties" -entry RAS/kOmegaSST2003RCCoeffs/curvatureCorrection -set "$correction"
             ;;
-        SpalartAllmarasCC)
-            foamDictionary "$caseDir/constant/turbulenceProperties" -entry RAS/SpalartAllmarasCCCoeffs/curvatureCorrection -set "$correction"
+        SpalartAllmarasNoFt2RC)
+            foamDictionary "$caseDir/constant/turbulenceProperties" -entry RAS/SpalartAllmarasNoFt2RCCoeffs/curvatureCorrection -set "$correction"
             ;;
     esac
 
@@ -144,9 +144,9 @@ runLevel()
     level=$1
     sourceLevel=${2:-}
     runCase "$level" sst kOmegaSST native "$sourceLevel"
-    runCase "$level" sstcc-on kOmegaSSTCC on "$sourceLevel"
+    runCase "$level" sstcc-on kOmegaSST2003RC on "$sourceLevel"
     runCase "$level" sa SpalartAllmaras native "$sourceLevel"
-    runCase "$level" sacc-on SpalartAllmarasCC on "$sourceLevel"
+    runCase "$level" sacc-on SpalartAllmarasNoFt2RC on "$sourceLevel"
 }
 
 prepareMesh level3-129x49 "$tutorialDir/resources/smits_3levdn_129x49.p2dfmt" 6144
