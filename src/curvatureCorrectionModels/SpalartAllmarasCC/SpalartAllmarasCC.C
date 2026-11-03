@@ -225,7 +225,7 @@ SpalartAllmarasCC<BasicTurbulenceModel>::SpalartAllmarasCC
     if
     (
         noFt2Variant_
-     && this->coeffDict_.lookupOrDefault<Switch>("ft2", false)
+     && this->coeffDict_.template getOrDefault<Switch>("ft2", false)
     )
     {
         FatalIOErrorInFunction(this->coeffDict_)
@@ -261,7 +261,7 @@ bool SpalartAllmarasCC<BasicTurbulenceModel>::read()
     if
     (
         noFt2Variant_
-     && this->coeffDict().lookupOrDefault<Switch>("ft2", false)
+     && this->coeffDict().template getOrDefault<Switch>("ft2", false)
     )
     {
         FatalIOErrorInFunction(this->coeffDict())

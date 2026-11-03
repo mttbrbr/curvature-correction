@@ -59,9 +59,9 @@ run_case()
 
     case "$family:$variant" in
         sst:native) model=kOmegaSST ;;
-        sst:on|sst:off) model=kOmegaSSTCC ;;
+        sst:on|sst:off) model=kOmegaSST2003RC ;;
         sa:native) model=SpalartAllmaras ;;
-        sa:on|sa:off) model=SpalartAllmarasCC ;;
+        sa:on|sa:off) model=SpalartAllmarasNoFt2RC ;;
         *) echo "ERROR: invalid model $family:$variant" >&2; exit 2 ;;
     esac
 
@@ -84,7 +84,7 @@ run_case()
     if [ "$variant" != native ]; then
         correction=on
         [ "$variant" = off ] && correction=off
-        if [ "$family" = sst ]; then coeffs=RAS/kOmegaSSTCCCoeffs; else coeffs=RAS/SpalartAllmarasCCCoeffs; fi
+        if [ "$family" = sst ]; then coeffs=RAS/kOmegaSST2003RCCoeffs; else coeffs=RAS/SpalartAllmarasNoFt2RCCoeffs; fi
         foamDictionary "$case_dir/constant/turbulenceProperties" \
             -entry "$coeffs/curvatureCorrection" -set "$correction" >/dev/null
         sample_fields="$sample_fields fr1 fr1Clipped curvatureIndicator productionRatio"

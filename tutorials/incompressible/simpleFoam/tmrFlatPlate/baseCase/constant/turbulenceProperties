@@ -13,7 +13,7 @@ RAS
     turbulence on;
     printCoeffs on;
 
-    kOmegaSSTCCCoeffs
+    kOmegaSST2003RCCoeffs
     {
         curvatureCorrection on;
         Cr1 1.0;
@@ -23,7 +23,7 @@ RAS
         frMax 1.25;
     }
 
-    SpalartAllmarasCCCoeffs
+    SpalartAllmarasNoFt2RCCoeffs
     {
         curvatureCorrection on;
         Cr1 1.0;

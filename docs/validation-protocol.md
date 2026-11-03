@@ -1,8 +1,10 @@
 # Physical-validation protocol
 
-This protocol is preregistered for the v1.0 release. Runnable cases and raw
-reference data live on a read-only private archive; only aggregate evidence is
-published here.
+This protocol is preregistered for the v1.0 release. The v1.0 campaign cases
+and their raw reference data live on a read-only private archive; only
+aggregate evidence is published here. The public tutorials under
+`tutorials/incompressible/simpleFoam` are development, smoke and staged-check
+cases and do not count as v1.0 evidence.
 
 The mount exposes a private `manifest.json`, a disclosure-safe
 `public-manifest.json`, and an executable `bin/run-campaign`. Each campaign runs

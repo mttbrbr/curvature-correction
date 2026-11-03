@@ -77,14 +77,14 @@ runCase()
         -entry RAS/RASModel -set "$model"
 
     case "$model" in
-        kOmegaSSTCC)
+        kOmegaSST2003RC)
             foamDictionary "$caseDir/constant/turbulenceProperties" \
-                -entry RAS/kOmegaSSTCCCoeffs/curvatureCorrection \
+                -entry RAS/kOmegaSST2003RCCoeffs/curvatureCorrection \
                 -set "$correction"
             ;;
-        SpalartAllmarasCC)
+        SpalartAllmarasNoFt2RC)
             foamDictionary "$caseDir/constant/turbulenceProperties" \
-                -entry RAS/SpalartAllmarasCCCoeffs/curvatureCorrection \
+                -entry RAS/SpalartAllmarasNoFt2RCCoeffs/curvatureCorrection \
                 -set "$correction"
             ;;
     esac
@@ -98,11 +98,11 @@ runCase()
 }
 
 runCase sst kOmegaSST
-runCase sstcc-off kOmegaSSTCC off
-runCase sstcc-on kOmegaSSTCC on
+runCase sstcc-off kOmegaSST2003RC off
+runCase sstcc-on kOmegaSST2003RC on
 runCase sa SpalartAllmaras
-runCase sacc-off SpalartAllmarasCC off
-runCase sacc-on SpalartAllmarasCC on
+runCase sacc-off SpalartAllmarasNoFt2RC off
+runCase sacc-on SpalartAllmarasNoFt2RC on
 
 python3 "$tutorialDir/tools/analyse.py" "$tutorialDir" "$grid"
 python3 "$tutorialDir/../smitsCurve/tools/compare_fields.py" \

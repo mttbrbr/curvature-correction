@@ -111,13 +111,33 @@ Runnable cases are available in [tutorials/incompressible/simpleFoam](tutorials/
 curved channel, flap-tip vortex, Smits curved wall, TMR flat plate, NACA 0012,
 TMR rotating pipe and Xiao rotating pipe. Each benchmark directory documents
 its setup and run commands. Load OpenFOAM.com v2412 before running `./Allrun`.
-The cases use the supported legacy RC aliases; benchmark inputs are fetched
-separately with `python3 tools/fetch_benchmark_data.py`. Generated results and
+The cases use the explicit `kOmegaSST2003RC` and `SpalartAllmarasNoFt2RC`
+runtime names; benchmark inputs are fetched separately with
+`python3 tools/fetch_benchmark_data.py`. Generated results and
 external reference files remain local.
 
 The repository also provides benchmark-data and report-generation utilities
 for analysing externally supplied results. The preregistered v1.0 gates and private-runner contract are in
 [the validation protocol](docs/validation-protocol.md).
+
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `src/curvatureCorrectionModels/` | OpenFOAM library: shared RC algebra in `common/`, the SST and SA model classes |
+| `tests/` | Python oracle and contract tests; `tests/openfoam/` holds the compiled regressions run by `tests/run_*.sh` |
+| `tools/` | Benchmark-data fetcher, validation-data collector, report generator and the `curvature_validation` oracle package |
+| `tutorials/incompressible/simpleFoam/` | Runnable cases, each with `Allrun`/`Allclean` and a README |
+| `data/` | Pinned benchmark-source manifest and transcribed reference models |
+| `docs/` | Audit, benchmark provenance, validation protocol and backlog (see below) |
+| `reports/` | Published aggregate validation evidence |
+
+Documentation:
+
+- [Implementation audit](docs/implementation-audit.md): equations, code mapping and literature comparison.
+- [Benchmark selection](docs/benchmark-selection.md): candidate cases, provenance and results so far.
+- [Validation protocol](docs/validation-protocol.md): preregistered v1.0 gates.
+- [Remaining work](docs/remaining-work.md): open issues and acceptance gates.
 
 ## References
 

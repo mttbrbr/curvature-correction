@@ -35,11 +35,11 @@ checks the results, exports VTK, and generates a comparison plot. It takes about
 | Directory | Turbulence model | Correction |
 | --- | --- | --- |
 | `sst` | native `kOmegaSST` | n/a |
-| `sstcc-off` | `kOmegaSSTCC` | off |
-| `sstcc-on` | `kOmegaSSTCC` | on |
+| `sstcc-off` | `kOmegaSST2003RC` | off |
+| `sstcc-on` | `kOmegaSST2003RC` | on |
 | `sa` | native `SpalartAllmaras` | n/a |
-| `sacc-off` | `SpalartAllmarasCC` | off |
-| `sacc-on` | `SpalartAllmarasCC` | on |
+| `sacc-off` | `SpalartAllmarasNoFt2RC` | off |
+| `sacc-on` | `SpalartAllmarasNoFt2RC` | on |
 
 Acceptance requires the custom models with the correction off to match their
 native parents, corrected SST and SA to reduce convex-wall `Cf` near the bend,

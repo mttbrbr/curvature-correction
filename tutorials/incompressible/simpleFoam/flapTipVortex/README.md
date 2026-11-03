@@ -7,7 +7,7 @@ so the pressure difference between the two faces rolls up into two
 counter-rotating streamwise vortices.
 
 The same locally refined mesh is used for native `kOmegaSST` and corrected
-`kOmegaSSTCC`, making diffusion, peak vorticity and core size comparable.
+`kOmegaSST2003RC`, making diffusion, peak vorticity and core size comparable.
 
 ## Run
 
