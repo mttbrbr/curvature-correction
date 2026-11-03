@@ -1,0 +1,49 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object fvSolution;
+}
+
+solvers
+{
+    p
+    {
+        solver GAMG;
+        tolerance 1e-9;
+        relTol 0.01;
+        smoother GaussSeidel;
+    }
+    "(U|k|omega|nuTilda)"
+    {
+        solver smoothSolver;
+        smoother symGaussSeidel;
+        tolerance 1e-9;
+        relTol 0.05;
+    }
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 0;
+    consistent yes;
+    residualControl
+    {
+        p 1e-6;
+        U 1e-7;
+        "(k|omega|nuTilda)" 1e-7;
+    }
+}
+
+relaxationFactors
+{
+    fields { p 0.3; }
+    equations
+    {
+        U 0.6;
+        k 0.6;
+        omega 0.6;
+        nuTilda 0.6;
+    }
+}

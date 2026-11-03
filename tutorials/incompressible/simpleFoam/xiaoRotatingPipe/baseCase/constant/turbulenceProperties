@@ -1,0 +1,27 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile { format ascii; class dictionary; object turbulenceProperties; }
+simulationType RAS;
+RAS
+{
+    RASModel kOmegaSST;
+    turbulence on;
+    printCoeffs on;
+    kOmegaSSTCCCoeffs
+    {
+        curvatureCorrection on;
+        writeCurvatureDiagnostics on;
+        Cr1 1.0;
+        Cr2 2.0;
+        Cr3 1.0;
+        frMin 0.0;
+        frMax 1.25;
+    }
+    SpalartAllmarasCCCoeffs
+    {
+        curvatureCorrection on;
+        writeCurvatureDiagnostics on;
+        Cr1 1.0;
+        Cr2 12.0;
+        Cr3 1.0;
+    }
+}

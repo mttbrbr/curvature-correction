@@ -221,6 +221,51 @@
       "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Smitscurve_validation/smits_cf_cfl3d_sstrc.dat"
     },
     {
+      "case": "rotatingpipe",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/reference/zaets_exp_u.dat",
+      "sha256": "773727b72f53becc2fc721f9eccefc663cf57341999f74982da4210329f71501",
+      "status": "downloadable",
+      "upstream_path": "Rotatingpipe_validation/zaets_exp_u.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Rotatingpipe_validation/zaets_exp_u.dat"
+    },
+    {
+      "case": "rotatingpipe",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/reference/zaets_exp_w.dat",
+      "sha256": "13d1b9d260836e24d6b7c572656e075a55ce1a687696f393d0f98adccb21e208",
+      "status": "downloadable",
+      "upstream_path": "Rotatingpipe_validation/zaets_exp_w.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Rotatingpipe_validation/zaets_exp_w.dat"
+    },
+    {
+      "case": "rotatingpipe",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/reference/zaets_exp_uv.dat",
+      "sha256": "d35dcfa32c3d9891d387e1692a847d9bba0e55b92d8a50c0801ec1c83d196a86",
+      "status": "downloadable",
+      "upstream_path": "Rotatingpipe_validation/zaets_exp_uv.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Rotatingpipe_validation/zaets_exp_uv.dat"
+    },
+    {
+      "case": "rotatingpipe",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/reference/zaets_exp_k.dat",
+      "sha256": "facd0f4325360ab2752140f9f01f01e0bb7fbe6bb8ec455d3a877626071c42f5",
+      "status": "downloadable",
+      "upstream_path": "Rotatingpipe_validation/zaets_exp_k.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Rotatingpipe_validation/zaets_exp_k.dat"
+    },
+    {
+      "case": "rotatingpipe",
+      "license": "CC0-1.0",
+      "local_path": "tutorials/incompressible/simpleFoam/tmrRotatingPipe/resources/reference/zaets_exp_uu_vv_ww.dat",
+      "sha256": "a7bd17f42155e7887d4ce5ab1ceb4ad238519597dee66d6c1f7351b4319a93c7",
+      "status": "downloadable",
+      "upstream_path": "Rotatingpipe_validation/zaets_exp_uu_vv_ww.dat",
+      "url": "https://raw.githubusercontent.com/TMBWG/turbmodels/ddf1840b6e928d1de60d920cafe431ed476f36a1/Rotatingpipe_validation/zaets_exp_uu_vv_ww.dat"
+    },
+    {
       "case": "smits-held",
       "license": "third-party-experimental-rights-unverified",
       "reason": "The TMBWG CC0 affirmer may not own all rights in the underlying experiment.",

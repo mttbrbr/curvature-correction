@@ -1,0 +1,35 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile { format ascii; class dictionary; object controlDict; }
+application simpleFoam;
+startFrom startTime;
+startTime 0;
+stopAt endTime;
+endTime 2000;
+deltaT 1;
+writeControl timeStep;
+writeInterval 500;
+purgeWrite 2;
+writeFormat ascii;
+writePrecision 12;
+writeCompression off;
+runTimeModifiable true;
+libs ("libcurvatureCorrectionModels.so");
+functions
+{
+    turbulenceFields
+    {
+        type turbulenceFields;
+        libs (fieldFunctionObjects);
+        fields (R);
+        executeControl writeTime;
+        writeControl writeTime;
+    }
+    wallShear
+    {
+        type wallShearStress;
+        libs (fieldFunctionObjects);
+        patches (wall);
+        executeControl writeTime;
+        writeControl writeTime;
+    }
+}

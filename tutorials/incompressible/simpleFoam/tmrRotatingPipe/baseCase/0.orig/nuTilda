@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile { format ascii; class volScalarField; object nuTilda; }
+dimensions [0 2 -1 0 0 0 0];
+internalField uniform 6.48648648649e-05;
+boundaryField
+{
+    inlet { type fixedValue; value uniform 6.48648648649e-05; }
+    outlet { type zeroGradient; }
+    stationaryWall { type fixedValue; value uniform 0; }
+    rotatingWall { type fixedValue; value uniform 0; }
+}

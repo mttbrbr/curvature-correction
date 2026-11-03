@@ -1,0 +1,17 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object MRFProperties;
+}
+
+rotatingPipe
+{
+    cellZone rotating;
+    active yes;
+    nonRotatingPatches (outlet);
+    origin (0 0 0);
+    axis (1 0 0);
+    omega @OMEGA@;
+}

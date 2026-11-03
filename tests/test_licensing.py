@@ -44,7 +44,7 @@ class LicensingTests(unittest.TestCase):
         self.assertEqual(data["tmr_revision"], TMR_REVISION)
         downloadable = [asset for asset in data["assets"] if asset["status"] == "downloadable"]
         held = [asset for asset in data["assets"] if asset["status"] == "hold"]
-        self.assertEqual(len(downloadable), 24)
+        self.assertEqual(len(downloadable), 29)
         self.assertGreaterEqual(len(held), 2)
         for asset in downloadable:
             with self.subTest(path=asset["local_path"]):

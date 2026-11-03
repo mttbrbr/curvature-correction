@@ -1,0 +1,92 @@
+FoamFile { format ascii; class dictionary; object controlDict; }
+application simpleFoam;
+startFrom startTime;
+startTime 0;
+stopAt endTime;
+endTime 2000;
+deltaT 1;
+writeControl timeStep;
+writeInterval 500;
+purgeWrite 0;
+writeFormat binary;
+writePrecision 8;
+writeCompression off;
+timeFormat general;
+timePrecision 6;
+runTimeModifiable true;
+libs ("libcurvatureCorrectionModels.so");
+
+functions
+{
+    Q
+    {
+        type Q;
+        libs (fieldFunctionObjects);
+        executeControl writeTime;
+        writeControl writeTime;
+    }
+    vorticity
+    {
+        type vorticity;
+        libs (fieldFunctionObjects);
+        executeControl writeTime;
+        writeControl writeTime;
+    }
+    forces
+    {
+        type forces;
+        libs (forces);
+        executeControl timeStep;
+        executeInterval 20;
+        writeControl timeStep;
+        writeInterval 20;
+        patches (flap);
+        pName p;
+        UName U;
+        rho rhoInf;
+        rhoInf 1;
+        CofR (0.25 0 0);
+    }
+
+    vortexSurfaces
+    {
+        type surfaces;
+        libs (sampling);
+        writeControl writeTime;
+        surfaceFormat vtk;
+        fields (Q vorticity);
+        interpolationScheme cellPoint;
+
+        surfaces
+        {
+            isoQ1000
+            {
+                type isoSurface;
+                isoField Q;
+                isoValue 1000;
+                interpolate true;
+            }
+            xOverC2
+            {
+                type cuttingPlane;
+                point (2 0 0);
+                normal (1 0 0);
+                interpolate true;
+            }
+            xOverC4
+            {
+                type cuttingPlane;
+                point (4 0 0);
+                normal (1 0 0);
+                interpolate true;
+            }
+            xOverC6
+            {
+                type cuttingPlane;
+                point (6 0 0);
+                normal (1 0 0);
+                interpolate true;
+            }
+        }
+    }
+}

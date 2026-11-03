@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile
+{
+    format ascii;
+    class volVectorField;
+    object U;
+}
+dimensions [0 1 -1 0 0 0 0];
+internalField uniform (8.15989267712 0 0);
+boundaryField
+{
+    inlet
+    {
+        type flowRateInletVelocity;
+        volumetricFlowRate constant 0.0230715529996692;
+        value uniform (8.15989267712 0 0);
+    }
+    outlet { type zeroGradient; }
+    stationaryWall { type noSlip; }
+    rotatingWall
+    {
+        type rotatingWallVelocity;
+        origin (0 0 0);
+        axis (1 0 0);
+        omega 0;
+        value uniform (0 0 0);
+    }
+}

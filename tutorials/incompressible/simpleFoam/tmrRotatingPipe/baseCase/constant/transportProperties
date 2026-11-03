@@ -1,0 +1,10 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object transportProperties;
+}
+
+transportModel Newtonian;
+nu [0 2 -1 0 0 0 0] 1.62162162162162e-05;

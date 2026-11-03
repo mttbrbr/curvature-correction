@@ -107,9 +107,16 @@ tests/run_mrf_mapping_regression.sh
 These are implementation-verification tests, not a claim of general physical
 validation. See [the implementation audit](docs/implementation-audit.md).
 
-The repository retains optional benchmark-data and report-generation utilities
-for analysing externally supplied results. Runnable OpenFOAM tutorial cases are
-not distributed. The preregistered v1.0 gates and private-runner contract are in
+Runnable cases are available in [tutorials/incompressible/simpleFoam](tutorials/incompressible/simpleFoam):
+curved channel, flap-tip vortex, Smits curved wall, TMR flat plate, NACA 0012,
+TMR rotating pipe and Xiao rotating pipe. Each benchmark directory documents
+its setup and run commands. Load OpenFOAM.com v2412 before running `./Allrun`.
+The cases use the supported legacy RC aliases; benchmark inputs are fetched
+separately with `python3 tools/fetch_benchmark_data.py`. Generated results and
+external reference files remain local.
+
+The repository also provides benchmark-data and report-generation utilities
+for analysing externally supplied results. The preregistered v1.0 gates and private-runner contract are in
 [the validation protocol](docs/validation-protocol.md).
 
 ## References

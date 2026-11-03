@@ -1,0 +1,17 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile { format ascii; class volVectorField; object U; }
+dimensions [0 1 -1 0 0 0 0];
+internalField uniform (1 0 0);
+boundaryField
+{
+    periodicIn { type cyclic; }
+    periodicOut { type cyclic; }
+    wall
+    {
+        type rotatingWallVelocity;
+        origin (0 0 0);
+        axis (1 0 0);
+        omega 0;
+        value uniform (0 0 0);
+    }
+}

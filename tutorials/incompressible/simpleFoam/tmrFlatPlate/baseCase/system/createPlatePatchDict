@@ -1,0 +1,17 @@
+FoamFile
+{
+    format ascii;
+    class dictionary;
+    object createPatchDict;
+}
+
+pointSync false;
+patches
+(
+    {
+        name plate;
+        patchInfo { type wall; }
+        constructFrom set;
+        set plateFaces;
+    }
+);

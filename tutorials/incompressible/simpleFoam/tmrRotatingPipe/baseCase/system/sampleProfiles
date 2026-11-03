@@ -1,0 +1,26 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+FoamFile { format ascii; class dictionary; object sampleProfiles; }
+type sets;
+libs (sampling);
+interpolationScheme cellPoint;
+setFormat raw;
+fields (U turbulenceProperties:R nut);
+sets
+(
+    nonRotatingStation
+    {
+        type uniform;
+        axis distance;
+        start (8.999999 0.000001 0);
+        end (8.999999 0.029999 0);
+        nPoints 81;
+    }
+    rotatingStation
+    {
+        type uniform;
+        axis distance;
+        start (10.499999 0.000001 0);
+        end (10.499999 0.029999 0);
+        nPoints 81;
+    }
+);
