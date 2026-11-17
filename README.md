@@ -13,6 +13,14 @@ Both implementations include the complete material derivative
 zones are implemented. MRF is experimental; SRF, moving-mesh, overset and 6DoF
 frame motion are outside the verified scope.
 
+> **Validation status.** The curvature corrections are **not validated against
+> experimental data or any other independent benchmark**. They are only
+> *implemented* following the formulations in the cited [References](#references).
+> The tests and tutorials in this repository check the implementation (tensor
+> algebra, limiting, frame invariance, MRF mapping) and are not evidence of
+> physical accuracy. Results must not be assumed to reproduce the published
+> models' performance or to match experiments.
+
 > This offering is not approved or endorsed by OpenCFD Limited, producer and
 > distributor of the OpenFOAM software via www.openfoam.com, and owner of the
 > OPENFOAM® and OpenCFD® trade marks.
@@ -104,8 +112,9 @@ tests/run_material_derivative_regression.sh
 tests/run_mrf_mapping_regression.sh
 ```
 
-These are implementation-verification tests, not a claim of general physical
-validation. See [the implementation audit](docs/implementation-audit.md).
+These are implementation-verification tests only: the models have not been
+validated against experimental data or other external references, and no claim
+of physical validation is made. See [the implementation audit](docs/implementation-audit.md).
 
 Runnable cases are available in [tutorials/incompressible/simpleFoam](tutorials/incompressible/simpleFoam):
 curved channel, flap-tip vortex, Smits curved wall, TMR flat plate, NACA 0012,
